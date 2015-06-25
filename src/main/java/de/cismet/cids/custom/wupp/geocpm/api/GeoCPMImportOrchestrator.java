@@ -197,7 +197,7 @@ public class GeoCPMImportOrchestrator {
         // interally used resources
         private ExecutorService importExecutor;
         private Future projectProgressWatch;
-        private PipelineJoiner pipelineJoiner;
+        private ProcessJoiner processJoiner;
 
         // initialised by config
         // -----
@@ -410,14 +410,14 @@ public class GeoCPMImportOrchestrator {
 
             geocpmProjects = importTransformer.transform(importObj);
 
+            if (Thread.interrupted()) {
+                return doCancel("import cancelled before project import setup", importObj, progressL); // NOI18N
+            }
+
             if (progressL != null) {
                 progress(
                     progressL,
                     new ProgressEvent(this, ProgressEvent.State.PROGRESSING, "GeoCPM Projects created")); // NOI18N
-            }
-
-            if (Thread.interrupted()) {
-                return doCancel("import cancelled before project import setup", importObj, progressL); // NOI18N
             }
 
             //J-
@@ -453,9 +453,9 @@ public class GeoCPMImportOrchestrator {
                 projectProgressWatch = importExecutor.submit(new ProjectProgressWatch(progressL));
             }
 
-            pipelineJoiner = new PipelineJoiner();
+            processJoiner = new ProcessJoiner();
 
-            final Future<ProgressEvent.State> taskFuture = importExecutor.submit(pipelineJoiner);
+            final Future<ProgressEvent.State> taskFuture = importExecutor.submit(processJoiner);
 
             return taskFuture.get();
         }
@@ -493,18 +493,24 @@ public class GeoCPMImportOrchestrator {
         private ProgressEvent.State doCancel(final String message,
                 final Object importObj,
                 final ProgressListener progressListener) {
+            System.out.println("DO CANCEL");
             if (log.isInfoEnabled()) {
                 log.info(message + " [" + importObj.toString() + "|progresslistener=" + progressListener + "]"); // NOI18N
             }
 
             // TODO: release all resources
 
-            //J-
-            // jalopy only supports java 1.6
-            runningProjects.stream().forEach(f -> f.cancel(true));
-            //J+
+            // running project might not be initialised if the task has been canceled right at the beginning
+            if (runningProjects != null) {
+                //J-
+                // jalopy only supports java 1.6
+                runningProjects.stream().forEach(f -> f.cancel(true));
+                //J+
+            }
+            runningProjects = null;
 
             progress(progressListener, new ProgressEvent(ImportTask.this, ProgressEvent.State.CANCELED));
+            System.out.println("cancel progress sent");
 
             return ProgressEvent.State.CANCELED;
         }
@@ -514,9 +520,10 @@ public class GeoCPMImportOrchestrator {
         /**
          * DOCUMENT ME!
          *
-         * @version  $Revision$, $Date$
+         * @author   martin.scholl@cismet.de
+         * @version  1.0
          */
-        private final class PipelineJoiner implements Callable<ProgressEvent.State> {
+        private final class ProcessJoiner implements Callable<ProgressEvent.State> {
 
             //~ Methods --------------------------------------------------------
 

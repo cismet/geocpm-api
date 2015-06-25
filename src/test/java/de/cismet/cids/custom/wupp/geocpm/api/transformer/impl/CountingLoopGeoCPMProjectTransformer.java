@@ -23,8 +23,6 @@ public class CountingLoopGeoCPMProjectTransformer implements GeoCPMProjectTransf
 
     @Override
     public GeoCPMProject transform(GeoCPMProject obj) {
-        
-        
         for(long i = 0; i < countTo; ++i) {
             // making it a little bit slower
             String.valueOf(this.toString() + this.hashCode() + obj.toString());

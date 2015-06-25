@@ -12,12 +12,18 @@ import lombok.RequiredArgsConstructor;
  * @version 1.0
  */
 @RequiredArgsConstructor
-public class Sleep500GeoCPMImportTransformer implements GeoCPMImportTransformer {
+public class CountingLoopGeoCPMImportTransformer implements GeoCPMImportTransformer {
 
-    public static final String TRANSFORMED_NAME = "sleep500 passed"; // NOI18N
+    public static final String TRANSFORMED_NAME = "loop passed"; // NOI18N
     
     private final int noOfProjects;
+    private final long countTo;
 
+    public CountingLoopGeoCPMImportTransformer() {
+        this.noOfProjects = 5;
+        this.countTo = 1000000000;
+    }
+    
     @Override
     public boolean accept(Object obj) {
         return true;
@@ -25,13 +31,14 @@ public class Sleep500GeoCPMImportTransformer implements GeoCPMImportTransformer 
 
     @Override
     public Collection<GeoCPMProject> transform(Object obj) {
-        try {
-            Thread.sleep(500);
-        } catch (InterruptedException ex) {
-            // noop
-        }
-        
         final Collection<GeoCPMProject> c = new ArrayList<>(noOfProjects);
+        for(long i = 0; i < countTo; ++i) {
+            // making it a little bit slower
+            String.valueOf(this.toString() + this.hashCode() + obj.toString());
+            if(Thread.currentThread().isInterrupted()) {
+                return c;
+            }
+        }
         
         for(int i = 0; i < noOfProjects; ++i) {
             final GeoCPMProject p = new GeoCPMProject();

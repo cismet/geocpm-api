@@ -2,13 +2,14 @@ package de.cismet.cids.custom.wupp.geocpm.api;
 
 import de.cismet.cids.custom.wupp.geocpm.api.transform.NoopGeoCPMImportTransformer;
 import de.cismet.cids.custom.wupp.geocpm.api.transform.NoopGeoCPMProjectTransformer;
-import de.cismet.cids.custom.wupp.geocpm.api.transformer.impl.Sleep500GeoCPMImportTransformer;
+import de.cismet.cids.custom.wupp.geocpm.api.transformer.impl.CountingLoopGeoCPMImportTransformer;
 import de.cismet.cids.custom.wupp.geocpm.api.transformer.impl.Sleep500GeoCPMProjectTransformer;
 import de.cismet.commons.utils.ProgressEvent;
 import de.cismet.commons.utils.ProgressListener;
 import java.lang.reflect.Field;
 import java.util.Collections;
 import java.util.Properties;
+import java.util.concurrent.CancellationException;
 import java.util.concurrent.Future;
 import org.openide.util.Lookup;
 import org.openide.util.lookup.AbstractLookup;
@@ -108,7 +109,7 @@ public class GeoCPMImportOrchestratorNGTest {
     public void testDoImport_defaultConfig_importLookup() throws Exception {
         printCurrentTestName();
         
-        MockLookup.add(new Sleep500GeoCPMImportTransformer(5));
+        MockLookup.add(new CountingLoopGeoCPMImportTransformer(5, 500));
         
         final GeoCPMImportOrchestrator o = new GeoCPMImportOrchestrator();
         
@@ -118,7 +119,7 @@ public class GeoCPMImportOrchestratorNGTest {
         
         assertEquals(config.getProperty(GeoCPMConstants.CFG_PIPELINE_PARALLEL_EXECS), "1");
         assertEquals(config.getProperty(GeoCPMConstants.CFG_IMPORTER_FQCN), 
-                Sleep500GeoCPMImportTransformer.class.getCanonicalName());
+                CountingLoopGeoCPMImportTransformer.class.getCanonicalName());
         assertEquals(config.getProperty(GeoCPMConstants.CFG_PIPELINE_IMPORTER_FQCN_PREFIX + "1"), 
                 NoopGeoCPMProjectTransformer.class.getCanonicalName());
     }
@@ -147,7 +148,7 @@ public class GeoCPMImportOrchestratorNGTest {
         printCurrentTestName();
         
         MockLookup.add(new Sleep500GeoCPMProjectTransformer());
-        MockLookup.add(new Sleep500GeoCPMImportTransformer(5));
+        MockLookup.add(new CountingLoopGeoCPMImportTransformer());
         
         final GeoCPMImportOrchestrator o = new GeoCPMImportOrchestrator();
         
@@ -157,7 +158,7 @@ public class GeoCPMImportOrchestratorNGTest {
         
         assertEquals(config.getProperty(GeoCPMConstants.CFG_PIPELINE_PARALLEL_EXECS), "1");
         assertEquals(config.getProperty(GeoCPMConstants.CFG_IMPORTER_FQCN), 
-                Sleep500GeoCPMImportTransformer.class.getCanonicalName());
+                CountingLoopGeoCPMImportTransformer.class.getCanonicalName());
         assertEquals(config.getProperty(GeoCPMConstants.CFG_PIPELINE_IMPORTER_FQCN_PREFIX + "1"), 
                 Sleep500GeoCPMProjectTransformer.class.getCanonicalName());
     }
@@ -182,21 +183,75 @@ public class GeoCPMImportOrchestratorNGTest {
         Future<ProgressEvent.State> f = o.doImport(new Object(), progL);
         
         f.get();
-        assertEquals(progL.lastEvent.getState(), ProgressEvent.State.FINISHED);
+        
+        awaitState(progL, ProgressEvent.State.FINISHED, 5000);
+    }
+    
+    @Test(expectedExceptions = CancellationException.class)
+    public void testDoImport_defaultConfig_cancelInterruptImport() throws Exception {
+        printCurrentTestName();
+        
+        MockLookup.add(new CountingLoopGeoCPMImportTransformer(5, 10000));
+        
+        final GeoCPMImportOrchestrator o = new GeoCPMImportOrchestrator();
+        
+        Future<ProgressEvent.State> f = o.doImport(new Object());
+        f.cancel(true);
+        f.get();
+    }
+    
+    @Test(expectedExceptions = CancellationException.class)
+    public void testDoImport_defaultConfig_cancelNoInterruptImport() throws Exception {
+        printCurrentTestName();
+        
+        MockLookup.add(new CountingLoopGeoCPMImportTransformer(5, 10000));
+        
+        final GeoCPMImportOrchestrator o = new GeoCPMImportOrchestrator();
+        
+        Future<ProgressEvent.State> f = o.doImport(new Object());
+        f.cancel(false);
+        f.get();
+    }
+    
+    @Test()
+    public void testDoImport_defaultConfig_cancelInterruptImportProgressL() throws Exception {
+        printCurrentTestName();
+        
+        MockLookup.add(new CountingLoopGeoCPMImportTransformer());
+        
+        final GeoCPMImportOrchestrator o = new GeoCPMImportOrchestrator();
+        
+        final ProgressL progL = new ProgressL();
+        Future<ProgressEvent.State> f = o.doImport(new Object(), progL);
+        // give the importer thread a chance to actually start working, otherwise it would not be scheduled at all
+        Thread.sleep(100);
+        f.cancel(true);
+        
+        awaitState(progL, ProgressEvent.State.CANCELED, 5000);
+    }
+    
+    // plain and simple active waiting
+    private void awaitState(ProgressL progL, ProgressEvent.State state, long timeout) throws Exception {
+        long start = System.currentTimeMillis();
+                
+        while((System.currentTimeMillis() - start) < timeout) {
+            if(progL.lastEvent != null && progL.lastEvent.getState().equals(state)) {
+                // we got it
+                return;
+            }
+            
+            Thread.sleep(100);
+        }
+        
+        fail("did not receive event with state " + state + ", waited for " + timeout + " ms");
     }
     
     private static final class ProgressL implements ProgressListener {
-
-        boolean firstEvent = true;
+        
         ProgressEvent lastEvent = null;
 
         @Override
         public void progress(ProgressEvent pe) {
-            if(firstEvent) {
-                assertEquals(pe.getState(), ProgressEvent.State.STARTED);
-                firstEvent = false;
-            }
-
             lastEvent = pe;
         }
     }
