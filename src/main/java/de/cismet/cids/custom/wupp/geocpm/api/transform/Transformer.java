@@ -7,8 +7,6 @@
 ****************************************************/
 package de.cismet.cids.custom.wupp.geocpm.api.transform;
 
-import de.cismet.cids.custom.wupp.geocpm.api.Cancellable;
-
 /**
  * DOCUMENT ME!
  *
@@ -18,7 +16,7 @@ import de.cismet.cids.custom.wupp.geocpm.api.Cancellable;
  * @author   martin.scholl@cismet.de
  * @version  1.0
  */
-public interface Transformer<I, O> extends Cancellable {
+public interface Transformer<I, O> {
 
     //~ Methods ----------------------------------------------------------------
 
@@ -31,7 +29,7 @@ public interface Transformer<I, O> extends Cancellable {
      */
     boolean accept(I obj);
     /**
-     * DOCUMENT ME!
+     * Implementing classes should be able to stop operations if interrupted.
      *
      * @param   obj  DOCUMENT ME!
      *

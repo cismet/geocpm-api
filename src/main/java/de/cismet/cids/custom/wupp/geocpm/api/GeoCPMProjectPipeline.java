@@ -18,7 +18,8 @@ import java.util.concurrent.Callable;
 import de.cismet.cids.custom.wupp.geocpm.api.transform.GeoCPMProjectTransformer;
 
 /**
- * By design changes the input project.
+ * By design changes the input project. If a call is canceled the state of the GeoCPMProject will remain as it is at the
+ * very point the interrupt took place or the execution stopped respectively. There is no rollback.
  *
  * @author   martin.scholl@cismet.de
  * @version  1.0
@@ -52,7 +53,7 @@ public class GeoCPMProjectPipeline implements Callable<GeoCPMProject> {
             }
 
             if (log.isDebugEnabled()) {
-                log.debug("transforming [project=" + project + "|transformer=" + transformer + "]");
+                log.debug("transforming [project=" + project + "|transformer=" + transformer + "]"); // NOI18N
             }
             project = transformer.transform(project);
         }
