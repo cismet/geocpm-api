@@ -2,23 +2,20 @@ package de.cismet.cids.custom.wupp.geocpm.api.transformer.impl;
 
 import de.cismet.cids.custom.wupp.geocpm.api.GeoCPMProject;
 import de.cismet.cids.custom.wupp.geocpm.api.transform.GeoCPMProjectTransformer;
+import lombok.RequiredArgsConstructor;
 
 /**
  *
  * @author martin.scholl@cismet.de
  * @version 1.0
  */
+@RequiredArgsConstructor
 public class CountingLoopGeoCPMProjectTransformer implements GeoCPMProjectTransformer {
     
     private final long countTo;
     private final int expectedStep;
     
 
-    public CountingLoopGeoCPMProjectTransformer(final long countTo, final int expectedStep) {
-        this.countTo = countTo;
-        this.expectedStep = expectedStep;
-    }
-    
     @Override
     public boolean accept(GeoCPMProject obj) {
         return obj.getAnnuality() == expectedStep;

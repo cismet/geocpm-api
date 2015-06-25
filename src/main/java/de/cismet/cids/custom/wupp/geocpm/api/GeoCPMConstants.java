@@ -28,4 +28,8 @@ public class GeoCPMConstants {
     public static final String SECTION_BK_CONNECT = "BK-CONNECT";     // NOI18N
 
     public static final String DEFAULT_FIELD_SEP = "     "; // NOI18N
+
+    public static final String CFG_IMPORTER_FQCN = "geocpm.import.importer.fqcn";                             // NOI18N
+    public static final String CFG_PIPELINE_PARALLEL_EXECS = "geocpm.import.pipeline.noOfParallelExecutions"; // NOI18N
+    public static final String CFG_PIPELINE_IMPORTER_FQCN_PREFIX = "geocpm.import.pipeline.transformer.";     // NOI18N
 }

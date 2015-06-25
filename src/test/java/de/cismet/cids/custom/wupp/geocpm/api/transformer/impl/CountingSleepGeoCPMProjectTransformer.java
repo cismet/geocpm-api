@@ -2,23 +2,19 @@ package de.cismet.cids.custom.wupp.geocpm.api.transformer.impl;
 
 import de.cismet.cids.custom.wupp.geocpm.api.GeoCPMProject;
 import de.cismet.cids.custom.wupp.geocpm.api.transform.GeoCPMProjectTransformer;
+import lombok.RequiredArgsConstructor;
 
 /**
  *
  * @author martin.scholl@cismet.de
  * @version 1.0
  */
+@RequiredArgsConstructor
 public class CountingSleepGeoCPMProjectTransformer implements GeoCPMProjectTransformer {
     
     private final long sleepTime;
     private final int expectedStep;
-    
 
-    public CountingSleepGeoCPMProjectTransformer(final long sleepTime, final int expectedStep) {
-        this.sleepTime = sleepTime;
-        this.expectedStep = expectedStep;
-    }
-    
     @Override
     public boolean accept(GeoCPMProject obj) {
         return obj.getAnnuality() == expectedStep;

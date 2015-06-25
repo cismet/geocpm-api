@@ -12,6 +12,8 @@ import lombok.RequiredArgsConstructor;
 
 import lombok.extern.slf4j.Slf4j;
 
+import org.openide.util.Lookup;
+
 import java.awt.EventQueue;
 
 import java.util.ArrayList;
@@ -97,7 +99,40 @@ public class GeoCPMImportOrchestrator {
     private Properties buildDefaultConfiguration() {
         final Properties config = new Properties();
 
-        // TODO: implement
+        final GeoCPMImportTransformer importTransformer = Lookup.getDefault().lookup(GeoCPMImportTransformer.class);
+        if (importTransformer == null) {
+            config.put(
+                GeoCPMConstants.CFG_IMPORTER_FQCN,
+                "de.cismet.cids.custom.wupp.geocpm.api.transform.NoopGeoCPMImportTransformer"); // NOI18N
+        } else {
+            config.put(GeoCPMConstants.CFG_IMPORTER_FQCN, importTransformer.getClass().getCanonicalName());
+        }
+
+        config.put(GeoCPMConstants.CFG_PIPELINE_PARALLEL_EXECS, String.valueOf(1));
+
+        // NOTE: We load the first project transformer we find assuming there is only one. We cannot lookup all
+        // instances and put them one after another as we cannot rely on the order they will occur. For a proper
+        // transformation pipeline order is crucial. So this operation is only convenience for the simple case of single
+        // transformer.
+
+        final Collection<? extends GeoCPMProjectTransformer> c = Lookup.getDefault()
+                    .lookupAll(GeoCPMProjectTransformer.class);
+
+        if (log.isWarnEnabled() && (c.size() > 1)) {
+            log.warn("found multiple project transformers, transformation may yield unexpected results: " + c); // NOI18N
+        }
+
+        if (c.size() < 1) {
+            config.put(
+                GeoCPMConstants.CFG_PIPELINE_IMPORTER_FQCN_PREFIX
+                        + "1", // NOI18N
+                "de.cismet.cids.custom.wupp.geocpm.api.transform.NoopGeoCPMProjectTransformer"); // NOI18N
+        } else {
+            config.put(
+                GeoCPMConstants.CFG_PIPELINE_IMPORTER_FQCN_PREFIX
+                        + "1", // NOI18N
+                c.iterator().next().getClass().getCanonicalName());
+        }
 
         return config;
     }
@@ -161,7 +196,7 @@ public class GeoCPMImportOrchestrator {
 
         // interally used resources
         private ExecutorService importExecutor;
-        private ProjectProgressWatch projectProgressWatch;
+        private Future projectProgressWatch;
         private PipelineJoiner pipelineJoiner;
 
         // initialised by config
@@ -179,7 +214,9 @@ public class GeoCPMImportOrchestrator {
         /**
          * DOCUMENT ME!
          *
-         * @param  config  DOCUMENT ME!
+         * @param   config  DOCUMENT ME!
+         *
+         * @throws  ConfigurationException  DOCUMENT ME!
          */
         private void setup(final Properties config) {
             if (log.isTraceEnabled()) {
@@ -195,9 +232,142 @@ public class GeoCPMImportOrchestrator {
                         log.error("uncaught exception in thread, task result unknown [thread=" + t + "]", tw); // NOI18N
                     }
             ));
+
+            runningProjects = new ArrayList<>();
             //J+
 
-            // TODO: implement
+            // <editor-fold defaultstate="collapsed" desc="no of parallel executions">
+            final String noOfParallelPipeLineThreads = config.getProperty(GeoCPMConstants.CFG_PIPELINE_PARALLEL_EXECS);
+            if ((noOfParallelPipeLineThreads == null) || noOfParallelPipeLineThreads.isEmpty()) {
+                throw new ConfigurationException("# of parallel pipeline executions (" // NOI18N
+                            + GeoCPMConstants.CFG_PIPELINE_PARALLEL_EXECS + ") not configured", // NOI18N
+                    null,
+                    config);
+            }
+
+            try {
+                final int parallelExecs = Integer.parseInt(noOfParallelPipeLineThreads, 10);
+
+                if (parallelExecs < 1) {
+                    throw new ConfigurationException("# of parallel pipeline executions (" // NOI18N
+                                + GeoCPMConstants.CFG_PIPELINE_PARALLEL_EXECS + ") contains improper value", // NOI18N
+                        null,
+                        config);
+                }
+                //J-
+                // jalopy only supports java 1.6
+                pipelineExecutor = CismetExecutors.newFixedThreadPool(parallelExecs,
+                        new CismetConcurrency.CismetThreadFactory(
+                                GEOCPM_THREADGROUP,
+                                "geocpm-import-pipeline",                                                                       // NOI18N
+                                (Thread t, Throwable tw) -> {
+                                    log.error("uncaught exception in thread, operation result unknown [thread=" + t + "]", tw); // NOI18N
+                                }
+                        ));
+                //J+
+            } catch (final NumberFormatException nfe) {
+                throw new ConfigurationException("# of parallel pipeline executions (" // NOI18N
+                            + GeoCPMConstants.CFG_PIPELINE_PARALLEL_EXECS + ") contains improper value", // NOI18N
+                    nfe,
+                    config);
+            }
+            // </editor-fold>
+
+            // <editor-fold defaultstate="collapsed" desc="import object transformer">
+            final String importTransformerFqcn = config.getProperty(GeoCPMConstants.CFG_IMPORTER_FQCN);
+            if ((importTransformerFqcn == null) || importTransformerFqcn.isEmpty()) {
+                throw new ConfigurationException("import transformer (" // NOI18N
+                            + GeoCPMConstants.CFG_IMPORTER_FQCN + ") not configured", // NOI18N
+                    null,
+                    config);
+            }
+
+            //J-
+            // jalopy only supports java 1.6
+            try {
+                final Class<?> cImportTransformer = Class.forName(importTransformerFqcn);
+                if(!GeoCPMImportTransformer.class.isAssignableFrom(cImportTransformer)) {
+                    throw new ConfigurationException("import transformer is not of type '" // NOI18N
+                            + GeoCPMImportTransformer.class.getCanonicalName() + "' (" // NOI18N
+                            + GeoCPMConstants.CFG_IMPORTER_FQCN + "): " + importTransformerFqcn, // NOI18N
+                    null,
+                    config);
+                }
+                importTransformer = (GeoCPMImportTransformer)cImportTransformer.newInstance();
+            } catch (final ClassNotFoundException ex) {
+                throw new ConfigurationException("import transformer not found (" // NOI18N
+                            + GeoCPMConstants.CFG_IMPORTER_FQCN + "): " + importTransformerFqcn, // NOI18N
+                    ex,
+                    config);
+            } catch (final InstantiationException | IllegalAccessException ex) {
+                throw new ConfigurationException("import transformer cannot be instantiated (" // NOI18N
+                            + GeoCPMConstants.CFG_IMPORTER_FQCN + "): " + importTransformerFqcn, // NOI18N
+                    ex,
+                    config);
+            }
+            //J+
+
+            // </editor-fold>
+
+            // <editor-fold defaultstate="collapsed" desc="project transformers">
+
+            //J-
+            // jalopy only supports java 1.6
+            projectTransformers = new ArrayList<>();
+            //J+
+            boolean continueSearch = true;
+            int sequentialNumber = 1;
+            while (continueSearch) {
+                final String currentTransformerFqcnProp = GeoCPMConstants.CFG_PIPELINE_IMPORTER_FQCN_PREFIX
+                            + String.valueOf(sequentialNumber);
+                final String projectTransformerFqcn = config.getProperty(currentTransformerFqcnProp);
+
+                if (projectTransformerFqcn == null) {
+                    continueSearch = false;
+                } else {
+                    if (projectTransformerFqcn.isEmpty()) {
+                        throw new ConfigurationException("project transformer (" // NOI18N
+                                    + currentTransformerFqcnProp + ") not configured", // NOI18N
+                            null,
+                            config);
+                    }
+
+                    //J-
+                    // jalopy only supports java 1.6
+                    try {
+                        final Class<?> cProjectTransformer = Class.forName(projectTransformerFqcn);
+                        if(!GeoCPMProjectTransformer.class.isAssignableFrom(cProjectTransformer)) {
+                            throw new ConfigurationException("project transformer is not of type '" // NOI18N
+                                    + GeoCPMProjectTransformer.class.getCanonicalName() + "' (" // NOI18N
+                                    + currentTransformerFqcnProp + "): " + projectTransformerFqcn, // NOI18N
+                            null,
+                            config);
+                        }
+                        projectTransformers.add((GeoCPMProjectTransformer)cProjectTransformer.newInstance());
+                    } catch (final ClassNotFoundException ex) {
+                        throw new ConfigurationException("project transformer not found (" // NOI18N
+                                    + currentTransformerFqcnProp + "): " + projectTransformerFqcn, // NOI18N
+                            ex,
+                            config);
+                    } catch (final InstantiationException | IllegalAccessException ex) {
+                        throw new ConfigurationException("project transformer cannot be instantiated (" // NOI18N
+                                    + currentTransformerFqcnProp + "): " + projectTransformerFqcn, // NOI18N
+                            ex,
+                            config);
+                    }
+                    //J+
+
+                    sequentialNumber++;
+                }
+            }
+
+            if (projectTransformers.isEmpty()) {
+                throw new ConfigurationException("project transformer (" // NOI18N
+                            + GeoCPMConstants.CFG_PIPELINE_IMPORTER_FQCN_PREFIX + "1) not configured", // NOI18N
+                    null,
+                    config);
+            }
+            // </editor-fold>
 
             if (log.isTraceEnabled()) {
                 log.trace("end setup [configuration=" + config + "]"); // NOI18N
@@ -280,8 +450,7 @@ public class GeoCPMImportOrchestrator {
             pipelineExecutor.shutdown();
 
             if (progressL != null) {
-                projectProgressWatch = new ProjectProgressWatch(progressL);
-                importExecutor.execute(projectProgressWatch);
+                projectProgressWatch = importExecutor.submit(new ProjectProgressWatch(progressL));
             }
 
             pipelineJoiner = new PipelineJoiner();
@@ -398,6 +567,18 @@ public class GeoCPMImportOrchestrator {
                     }
                 }
 
+                // maybe implement shutdown operation or similar
+                // ensure the progress watch stopped so that the last event is indeed finish
+                if (projectProgressWatch != null) {
+                    projectProgressWatch.get();
+                }
+
+                if (progressL != null) {
+                    progress(
+                        progressL,
+                        new ProgressEvent(this, ProgressEvent.State.FINISHED, "GeoCPM Import Finished")); // NOI18N
+                }
+
                 return ProgressEvent.State.FINISHED;
             }
         }
@@ -430,7 +611,7 @@ public class GeoCPMImportOrchestrator {
 
             @Override
             public void run() {
-                while (!importExecutor.isTerminated()) {
+                while (!pipelineExecutor.isTerminated()) {
                     if (Thread.currentThread().isInterrupted()) {
                         if (log.isDebugEnabled()) {
                             log.debug("progress watch is interrupted during watch, event propagation stopped"); // NOI18N
@@ -440,10 +621,10 @@ public class GeoCPMImportOrchestrator {
                     }
 
                     //J-
-                // jalopy only supports java 1.6
-                final int doneCount = Long.valueOf(
-                            runningProjects.stream().filter(f -> f.isDone()).count()
-                        ).intValue();
+                    // jalopy only supports java 1.6
+                    final int doneCount = Long.valueOf(
+                                runningProjects.stream().filter(f -> (f.isDone() && !f.isCancelled())).count()
+                            ).intValue();
                     //J+
 
                     if ((lastEvent != null) && (lastEvent.getStep() < doneCount)) {
