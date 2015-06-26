@@ -15,6 +15,11 @@ public class CountingSleepGeoCPMProjectTransformer implements GeoCPMProjectTrans
     private final long sleepTime;
     private final int expectedStep;
 
+    public CountingSleepGeoCPMProjectTransformer() {
+        this.sleepTime = 0;
+        this.expectedStep = 1;
+    }
+    
     @Override
     public boolean accept(GeoCPMProject obj) {
         return obj.getAnnuality() == expectedStep;

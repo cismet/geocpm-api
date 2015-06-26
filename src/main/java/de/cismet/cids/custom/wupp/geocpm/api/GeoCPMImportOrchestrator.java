@@ -164,6 +164,19 @@ public class GeoCPMImportOrchestrator {
     /**
      * DOCUMENT ME!
      *
+     * @param   configuration  DOCUMENT ME!
+     * @param   importObj      DOCUMENT ME!
+     *
+     * @return  DOCUMENT ME!
+     */
+    public Future<ProgressEvent.State> doImport(@NonNull final Properties configuration,
+            @NonNull final Object importObj) {
+        return internalExecutor.submit(new ImportTask(configuration, importObj, null));
+    }
+
+    /**
+     * DOCUMENT ME!
+     *
      * @param   configuration     the configuration to use
      * @param   importObj         DOCUMENT ME!
      * @param   progressListener  DOCUMENT ME!
@@ -493,9 +506,8 @@ public class GeoCPMImportOrchestrator {
         private ProgressEvent.State doCancel(final String message,
                 final Object importObj,
                 final ProgressListener progressListener) {
-            System.out.println("DO CANCEL");
             if (log.isInfoEnabled()) {
-                log.info(message + " [" + importObj.toString() + "|progresslistener=" + progressListener + "]"); // NOI18N
+                log.info(message + " [importObj=" + importObj + "|progresslistener=" + progressListener + "]"); // NOI18N
             }
 
             // TODO: release all resources
@@ -509,8 +521,9 @@ public class GeoCPMImportOrchestrator {
             }
             runningProjects = null;
 
-            progress(progressListener, new ProgressEvent(ImportTask.this, ProgressEvent.State.CANCELED));
-            System.out.println("cancel progress sent");
+            if (progressListener != null) {
+                progress(progressListener, new ProgressEvent(ImportTask.this, ProgressEvent.State.CANCELED));
+            }
 
             return ProgressEvent.State.CANCELED;
         }

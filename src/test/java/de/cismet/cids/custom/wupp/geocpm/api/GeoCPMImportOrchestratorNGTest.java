@@ -6,6 +6,8 @@ import de.cismet.cids.custom.wupp.geocpm.api.transformer.impl.CountingLoopGeoCPM
 import de.cismet.cids.custom.wupp.geocpm.api.transformer.impl.Sleep500GeoCPMProjectTransformer;
 import de.cismet.commons.utils.ProgressEvent;
 import de.cismet.commons.utils.ProgressListener;
+import java.io.BufferedInputStream;
+import java.io.FileInputStream;
 import java.lang.reflect.Field;
 import java.util.Collections;
 import java.util.Properties;
@@ -33,6 +35,14 @@ public class GeoCPMImportOrchestratorNGTest {
 
     @BeforeClass
     public static void setUpClass() throws Exception {
+        final Properties p = new Properties();
+        p.put("log4j.appender.Remote", "org.apache.log4j.net.SocketAppender");
+        p.put("log4j.appender.Remote.remoteHost", "localhost");
+        p.put("log4j.appender.Remote.port", "4445");
+        p.put("log4j.appender.Remote.locationInfo", "true");
+        p.put("log4j.rootLogger", "ALL,Remote");
+        org.apache.log4j.PropertyConfigurator.configure(p);
+            
         System.setProperty("org.openide.util.Lookup", MockLookup.class.getName()); 
     }
 
@@ -68,7 +78,21 @@ public class GeoCPMImportOrchestratorNGTest {
     public void testDoImport_Object_ProgressListener_nullObject() {
         printCurrentTestName();
         
-        new GeoCPMImportOrchestrator().doImport(null, null);
+        new GeoCPMImportOrchestrator().doImport((Object)null, (ProgressListener)null);
+    }
+    
+    @Test(expectedExceptions = IllegalArgumentException.class)
+    public void testDoImport_Properties_Object_nullProperties() {
+        printCurrentTestName();
+        
+        new GeoCPMImportOrchestrator().doImport((Properties)null, (Object)null);
+    }
+    
+    @Test(expectedExceptions = IllegalArgumentException.class)
+    public void testDoImport_Properties_Object_nullObject() {
+        printCurrentTestName();
+        
+        new GeoCPMImportOrchestrator().doImport(new Properties(), (Object)null);
     }
     
     @Test(expectedExceptions = IllegalArgumentException.class)
@@ -228,6 +252,34 @@ public class GeoCPMImportOrchestratorNGTest {
         f.cancel(true);
         
         awaitState(progL, ProgressEvent.State.CANCELED, 5000);
+    }
+    
+    @Test()
+    public void testDoImport_customConfig_runBroken() throws Exception {
+        printCurrentTestName();
+        
+        final GeoCPMImportOrchestrator o = new GeoCPMImportOrchestrator();
+        
+        final Properties props = new Properties();
+        props.load(getClass().getResourceAsStream("GeoCPMImportOrchestratorNGTest_noAcceptConfig.properties"));
+        
+        Future<ProgressEvent.State> f = o.doImport(props, new Object());
+        
+        assertEquals(f.get(), ProgressEvent.State.BROKEN);
+    }
+    
+    @Test()
+    public void testDoImport_customConfig_run() throws Exception {
+        printCurrentTestName();
+        
+        final GeoCPMImportOrchestrator o = new GeoCPMImportOrchestrator();
+        
+        final Properties props = new Properties();
+        props.load(getClass().getResourceAsStream("GeoCPMImportOrchestratorNGTest_simpleRunConfig.properties"));
+        
+        Future<ProgressEvent.State> f = o.doImport(props, new Object());
+        
+        assertEquals(f.get(), ProgressEvent.State.FINISHED);
     }
     
     // plain and simple active waiting

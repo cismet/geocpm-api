@@ -14,8 +14,12 @@ public class CountingLoopGeoCPMProjectTransformer implements GeoCPMProjectTransf
     
     private final long countTo;
     private final int expectedStep;
-    
 
+    public CountingLoopGeoCPMProjectTransformer() {
+        this.countTo = 1000;
+        this.expectedStep = 2;
+    }
+    
     @Override
     public boolean accept(GeoCPMProject obj) {
         return obj.getAnnuality() == expectedStep;
