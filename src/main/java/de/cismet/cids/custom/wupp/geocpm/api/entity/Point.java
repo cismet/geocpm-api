@@ -8,6 +8,7 @@
 package de.cismet.cids.custom.wupp.geocpm.api.entity;
 
 import lombok.Getter;
+import lombok.ToString;
 
 /**
  * DOCUMENT ME!
@@ -16,6 +17,7 @@ import lombok.Getter;
  * @version  1.0
  */
 @Getter
+@ToString
 public class Point extends CommonEntity {
 
     //~ Instance fields --------------------------------------------------------

@@ -7,6 +7,7 @@
 ****************************************************/
 package de.cismet.cids.custom.wupp.geocpm.api;
 
+import de.cismet.cids.custom.wupp.geocpm.api.entity.Point;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
@@ -39,6 +40,7 @@ public class GeoCPMProject {
     private Reader geocpmMaxReader;
     private Reader geocpmResultElementsReader;
 
-    // NOTE: maybe this collection will consume too much space, then it has to be cached on disk
+    // NOTE: maybe these collections will consume too much space, then it has to be cached on disk
     private Collection<Triangle> triangles;
+    private Collection<Point> points;
 }
