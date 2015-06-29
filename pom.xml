@@ -8,7 +8,7 @@
         <version>3.0.2</version>
     </parent>
 
-    <groupId>de.cismet.cids.custom.wupp</groupId>
+    <groupId>de.cismet.geocpm</groupId>
     <artifactId>geocpm-api</artifactId>
     <version>1.0-SNAPSHOT</version>
     <packaging>jar</packaging>
