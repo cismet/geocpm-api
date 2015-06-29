@@ -18,9 +18,22 @@ import lombok.RequiredArgsConstructor;
  */
 @RequiredArgsConstructor
 @Getter
-public abstract class CommonEntity {
+public abstract class CommonEntity implements Comparable<CommonEntity> {
 
     //~ Instance fields --------------------------------------------------------
 
-    private final long id;
+    private final int id;
+
+    //~ Methods ----------------------------------------------------------------
+
+    @Override
+    public int compareTo(final CommonEntity o) {
+        if (o.getId() > id) {
+            return -1;
+        } else if (o.getId() < id) {
+            return 1;
+        } else {
+            return 0;
+        }
+    }
 }

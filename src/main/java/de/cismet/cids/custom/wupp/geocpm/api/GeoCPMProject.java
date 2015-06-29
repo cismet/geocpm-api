@@ -7,15 +7,15 @@
 ****************************************************/
 package de.cismet.cids.custom.wupp.geocpm.api;
 
-import de.cismet.cids.custom.wupp.geocpm.api.entity.Point;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
-import java.io.Reader;
+import java.io.File;
 
 import java.util.Collection;
 
+import de.cismet.cids.custom.wupp.geocpm.api.entity.Point;
 import de.cismet.cids.custom.wupp.geocpm.api.entity.Triangle;
 
 /**
@@ -34,11 +34,11 @@ public class GeoCPMProject {
     private String name;
     private String description;
     private int annuality;
-    private Reader geocpmEinReader;
-    private Reader geocpmSubinfoReader;
-    private Reader geocpmInfoReader;
-    private Reader geocpmMaxReader;
-    private Reader geocpmResultElementsReader;
+    private File geocpmEin;
+    private File geocpmSubinfo;
+    private File geocpmInfo;
+    private File geocpmMax;
+    private File geocpmResultElements;
 
     // NOTE: maybe these collections will consume too much space, then it has to be cached on disk
     private Collection<Triangle> triangles;

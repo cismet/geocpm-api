@@ -1,10 +1,10 @@
 package de.cismet.cids.custom.wupp.geocpm.api.transform;
 
 import de.cismet.cids.custom.wupp.geocpm.api.GeoCPMProject;
-import java.io.BufferedReader;
-import java.io.FileReader;
+import java.io.BufferedOutputStream;
+import java.io.File;
+import java.io.FileOutputStream;
 import java.io.InputStreamReader;
-import java.io.StringReader;
 import static org.testng.Assert.*;
 import org.testng.annotations.AfterClass;
 import org.testng.annotations.AfterMethod;
@@ -46,14 +46,20 @@ public class GeoCPMEinPointToMemoryTransformerNGTest {
      * Test of accept method, of class GeoCPMEinPointToMemoryTransformer.
      */
     @Test
-    public void testAccept() {
+    public void testAccept() throws Exception {
         printCurrentTestName();
         
         final GeoCPMEinPointToMemoryTransformer t = new GeoCPMEinPointToMemoryTransformer();
+        
+        assertFalse(t.accept(null));
+        
         GeoCPMProject p = new GeoCPMProject();
         assertFalse(t.accept(p));
         
-        p.setGeocpmEinReader(new StringReader("test"));
+        final File f = File.createTempFile("test", "geocpmtests");
+        f.deleteOnExit();
+        
+        p.setGeocpmEin(f);
         assertTrue(t.accept(p));
     }
 
@@ -61,14 +67,24 @@ public class GeoCPMEinPointToMemoryTransformerNGTest {
      * Test of transform method, of class GeoCPMEinPointToMemoryTransformer.
      */
     @Test
-    public void testTransform() {
+    public void testTransform() throws Exception {
         printCurrentTestName();
         
         final GeoCPMEinPointToMemoryTransformer t = new GeoCPMEinPointToMemoryTransformer();
         GeoCPMProject p = new GeoCPMProject();
         final InputStreamReader r = new InputStreamReader(
                 getClass().getResourceAsStream("GeoCPMEinPointToMemoryTransformer_SimpleGeoCPM.ein"));
-        p.setGeocpmEinReader(r);
+        final File f = File.createTempFile("test", "geocpmtests");
+        f.deleteOnExit();
+        
+        int c;
+        BufferedOutputStream o = new BufferedOutputStream(new FileOutputStream(f));
+        while((c = r.read()) >= 0) {
+            o.write(c);
+        }
+        o.flush();
+        
+        p.setGeocpmEin(f);
         
         p = t.transform(p);
         

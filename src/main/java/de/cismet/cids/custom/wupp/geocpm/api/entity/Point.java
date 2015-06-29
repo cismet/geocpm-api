@@ -36,7 +36,7 @@ public class Point extends CommonEntity {
      * @param  y   DOCUMENT ME!
      * @param  z   DOCUMENT ME!
      */
-    public Point(final long id, final double x, final double y, final double z) {
+    public Point(final int id, final double x, final double y, final double z) {
         super(id);
         this.x = x;
         this.y = y;
