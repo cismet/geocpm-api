@@ -12,7 +12,6 @@ import java.io.FileReader;
 import java.io.IOException;
 
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 
@@ -80,10 +79,11 @@ public class GeoCPMEinTriangleToMemoryTransformer implements GeoCPMProjectTransf
 
         try(final BufferedReader br = new BufferedReader(new FileReader(obj.getGeocpmEin()))) {
 
-            final Triangle[] triangles = br.lines()
-                    .filter(line -> line.matches(TRIANGLE_LINE_REGEX))
-                    .map(line -> {
-                        final String[] s = line.split(GeoCPMConstants.DEFAULT_FIELD_SEP);
+            final List<Triangle> triangles = new ArrayList<>();
+            String line;
+            while((line = br.readLine()) != null) {
+                if(line.matches(TRIANGLE_LINE_REGEX)) {
+                    final String[] s = line.split(GeoCPMConstants.DEFAULT_FIELD_SEP);
                         final int idA = Integer.parseInt(s[1]);
                         final int idB = Integer.parseInt(s[2]);
                         final int idC = Integer.parseInt(s[3]);
@@ -104,17 +104,18 @@ public class GeoCPMEinTriangleToMemoryTransformer implements GeoCPMProjectTransf
                             beA = beB = beC = 0;
                         }
 
-                        return new Triangle(
+                        triangles.add(new Triangle(
                                 Integer.parseInt(s[0]),
                                 points.get(idA),
                                 points.get(idB),
                                 points.get(idC),
                                 beA,
                                 beB,
-                                beC);
-                    })
-                    .toArray(Triangle[]::new);
-            obj.setTriangles(Arrays.asList(triangles));
+                                beC));
+                }
+            }
+
+            obj.setTriangles(triangles);
 
             return obj;
         } catch (final IOException ex) {

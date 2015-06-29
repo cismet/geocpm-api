@@ -13,7 +13,8 @@ import java.io.BufferedReader;
 import java.io.FileReader;
 import java.io.IOException;
 
-import java.util.Arrays;
+import java.util.ArrayList;
+import java.util.List;
 
 import de.cismet.geocpm.api.GeoCPMConstants;
 import de.cismet.geocpm.api.GeoCPMProject;
@@ -59,19 +60,20 @@ public class GeoCPMEinPointToMemoryTransformer implements GeoCPMProjectTransform
         //J-
         // jalopy only supports java 1.6
         try(final BufferedReader br = new BufferedReader(new FileReader(obj.getGeocpmEin()))) {
-            final Point[] points = br.lines()
-                    .filter(line -> line.matches(POINT_LINE_REGEX))
-                    .map(line -> {
-                        final String[] s = line.split(GeoCPMConstants.DEFAULT_FIELD_SEP);
-                        return new Point(
+            final List<Point> points = new ArrayList<>();
+            String line;
+            while((line = br.readLine()) != null) {
+                if(line.matches(POINT_LINE_REGEX)) {
+                    final String[] s = line.split(GeoCPMConstants.DEFAULT_FIELD_SEP);
+                    points.add(new Point(
                                 Integer.parseInt(s[0]),
                                 Double.parseDouble(s[1]),
                                 Double.parseDouble(s[2]),
-                                Double.parseDouble(s[3]));
-                    })
-                    .toArray(Point[]::new);
+                                Double.parseDouble(s[3])));
+                }
+            }
 
-            obj.setPoints(Arrays.asList(points));
+            obj.setPoints(points);
 
             return obj;
         } catch (final IOException ex) {

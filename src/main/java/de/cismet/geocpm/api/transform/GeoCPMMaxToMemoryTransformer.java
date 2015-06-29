@@ -72,18 +72,19 @@ public class GeoCPMMaxToMemoryTransformer implements GeoCPMProjectTransformer {
         }
 
         try(final BufferedReader br = new BufferedReader(new FileReader(obj.getGeocpmMax()))) {
-            br.lines()
-                    .filter(line -> line.matches(MAX_REGEX))
-                    .forEach(line -> {
-                        final String[] s = line.split(" +"); // NOI18N
-                        final int tId = Integer.parseInt(s[0]);
+            String line;
+            while((line = br.readLine()) != null) {
+                if(line.matches(MAX_REGEX)) {
+                    final String[] s = line.split(" +"); // NOI18N
+                    final int tId = Integer.parseInt(s[0]);
 
-                        if(tId >= triangles.size()) {
-                            throw new IllegalStateException("wrong triangle reference: " + line); // NOI18N
-                        }
+                    if(tId >= triangles.size()) {
+                        throw new IllegalStateException("wrong triangle reference: " + line); // NOI18N
+                    }
 
-                        triangles.get(tId).setMaxWaterlevel(Double.parseDouble(s[1]));
-                    });
+                    triangles.get(tId).setMaxWaterlevel(Double.parseDouble(s[1]));
+                }
+            }
 
             return obj;
         } catch (final IOException ex) {

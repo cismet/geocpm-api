@@ -26,6 +26,7 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
+import java.util.concurrent.RejectedExecutionHandler;
 import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
@@ -74,16 +75,25 @@ public class GeoCPMImportOrchestrator {
                 new CismetConcurrency.CismetThreadFactory(
                         GEOCPM_THREADGROUP,
                         "geocpm-import-orchestrator",                                                     // NOI18N
-                        (Thread t, Throwable tw) -> {
-                            log.error("uncaught exception in thread, operation result unknown [thread=" + t + "]", tw); // NOI18N
+                        new Thread.UncaughtExceptionHandler() {
+
+                            @Override
+                            public void uncaughtException(Thread t, Throwable e) {
+                                log.error("uncaught exception in thread, operation result unknown [thread=" + t + "]", e); // NOI18N
+                            }
                         }
                 ),
-                (Runnable r, ThreadPoolExecutor executor) -> {
-                    log.error("cannot execute internal task, too few resources? operation result unknown "  // NOI18N
+                new RejectedExecutionHandler() {
+
+                    @Override
+                    public void rejectedExecution(Runnable r, ThreadPoolExecutor executor) {
+                        log.error("cannot execute internal task, too few resources? operation result unknown "  // NOI18N
                             + "[runnable=" + r                                                              // NOI18N
                             + "|executor=" + executor                                                       // NOI18N
-                            + "]");                                                                         // NOI18N
-        });
+                            + "]"); // NOI18N
+                    }
+                }
+        );
         //J+
 
         this.defaultConfiguration = buildDefaultConfiguration();
@@ -236,16 +246,21 @@ public class GeoCPMImportOrchestrator {
                 log.trace("begin setup [configuration=" + config + "]"); // NOI18N
             }
 
+            importExecutor = Executors.newFixedThreadPool(
+                    2,
+                    new CismetConcurrency.CismetThreadFactory(
+                        GEOCPM_THREADGROUP,
+                        "geocpm-import-task", // NOI18N
+                        new Thread.UncaughtExceptionHandler() {
+
+                            @Override
+                            public void uncaughtException(final Thread t, final Throwable e) {
+                                log.error("uncaught exception in thread, task result unknown [thread=" + t + "]", e); // NOI18N
+                            }
+                        }));
+
             //J-
             // jalopy only supports java 1.6
-            importExecutor = Executors.newFixedThreadPool(2, new CismetConcurrency.CismetThreadFactory(
-                    GEOCPM_THREADGROUP,
-                    "geocpm-import-task",                                                                      // NOI18N
-                    (Thread t, Throwable tw) -> {
-                        log.error("uncaught exception in thread, task result unknown [thread=" + t + "]", tw); // NOI18N
-                    }
-            ));
-
             runningProjects = new ArrayList<>();
             //J+
 
@@ -267,17 +282,22 @@ public class GeoCPMImportOrchestrator {
                         null,
                         config);
                 }
-                //J-
-                // jalopy only supports java 1.6
-                pipelineExecutor = CismetExecutors.newFixedThreadPool(parallelExecs,
+                pipelineExecutor = CismetExecutors.newFixedThreadPool(
+                        parallelExecs,
                         new CismetConcurrency.CismetThreadFactory(
-                                GEOCPM_THREADGROUP,
-                                "geocpm-import-pipeline",                                                                       // NOI18N
-                                (Thread t, Throwable tw) -> {
-                                    log.error("uncaught exception in thread, operation result unknown [thread=" + t + "]", tw); // NOI18N
+                            GEOCPM_THREADGROUP,
+                            "geocpm-import-pipeline",          // NOI18N
+                            new Thread.UncaughtExceptionHandler() {
+
+                                @Override
+                                public void uncaughtException(final Thread t, final Throwable e) {
+                                    log.error(
+                                        "uncaught exception in thread, operation result unknown [thread="
+                                                + t
+                                                + "]",
+                                        e); // NOI18N
                                 }
-                        ));
-                //J+
+                            }));
             } catch (final NumberFormatException nfe) {
                 throw new ConfigurationException("# of parallel pipeline executions (" // NOI18N
                             + GeoCPMConstants.CFG_PIPELINE_PARALLEL_EXECS + ") contains improper value", // NOI18N
@@ -436,18 +456,18 @@ public class GeoCPMImportOrchestrator {
             //J-
             // jalopy only supports java 1.6
             final Collection<Callable<GeoCPMProject>> projectTasks = new ArrayList<>(geocpmProjects.size());
-            geocpmProjects.stream().parallel().forEach(
-                    project -> projectTasks.add(new GeoCPMProjectPipeline(project, projectTransformers)));
             //J+
+            for (final GeoCPMProject project : geocpmProjects) {
+                projectTasks.add(new GeoCPMProjectPipeline(project, projectTransformers));
+            }
 
             if (Thread.interrupted()) {
                 return doCancel("import cancelled before project import", importObj, progressL); // NOI18N
             }
 
-            //J-
-            // jalopy only supports java 1.6
-            projectTasks.stream().parallel().forEach(task -> runningProjects.add(pipelineExecutor.submit(task)));
-            //J+
+            for (final Callable<GeoCPMProject> task : projectTasks) {
+                runningProjects.add(pipelineExecutor.submit(task));
+            }
 
             if (progressL != null) {
                 progress(
@@ -487,10 +507,13 @@ public class GeoCPMImportOrchestrator {
             if (EventQueue.isDispatchThread()) {
                 progressListener.progress(progressEvent);
             } else {
-                //J-
-                // jalopy only supports java 1.6
-                EventQueue.invokeLater(() -> progressListener.progress(progressEvent));
-                //J+
+                EventQueue.invokeLater(new Runnable() {
+
+                        @Override
+                        public void run() {
+                            progressListener.progress(progressEvent);
+                        }
+                    });
             }
         }
 
@@ -514,10 +537,9 @@ public class GeoCPMImportOrchestrator {
 
             // running project might not be initialised if the task has been canceled right at the beginning
             if (runningProjects != null) {
-                //J-
-                // jalopy only supports java 1.6
-                runningProjects.stream().forEach(f -> f.cancel(true));
-                //J+
+                for (final Future<GeoCPMProject> f : runningProjects) {
+                    f.cancel(true);
+                }
             }
             runningProjects = null;
 
@@ -640,12 +662,12 @@ public class GeoCPMImportOrchestrator {
                         return;
                     }
 
-                    //J-
-                    // jalopy only supports java 1.6
-                    final int doneCount = Long.valueOf(
-                                runningProjects.stream().filter(f -> (f.isDone() && !f.isCancelled())).count()
-                            ).intValue();
-                    //J+
+                    int doneCount = 0;
+                    for (final Future<GeoCPMProject> f : runningProjects) {
+                        if (f.isDone() && !f.isCancelled()) {
+                            doneCount++;
+                        }
+                    }
 
                     if ((lastEvent != null) && (lastEvent.getStep() < doneCount)) {
                         lastEvent = new ProgressEvent(
