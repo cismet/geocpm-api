@@ -21,9 +21,9 @@ import org.testng.annotations.Test;
  * @author martin.scholl@cismet.de
  * @version 1.0
  */
-public class GeoCPMMaxToMemoryTransformerNGTest {
+public class GeoCPMResultElementsToMemoryTransformerNGTest {
 
-    public GeoCPMMaxToMemoryTransformerNGTest() {
+    public GeoCPMResultElementsToMemoryTransformerNGTest() {
     }
 
     @BeforeClass
@@ -47,13 +47,13 @@ public class GeoCPMMaxToMemoryTransformerNGTest {
     }
 
     /**
-     * Test of accept method, of class GeoCPMMaxToMemoryTransformer.
+     * Test of accept method, of class GeoCPMResultElementsToMemoryTransformer.
      */
     @Test
     public void testAccept() throws Exception {
         printCurrentTestName();
         
-        final GeoCPMMaxToMemoryTransformer t = new GeoCPMMaxToMemoryTransformer();
+        final GeoCPMResultElementsToMemoryTransformer t = new GeoCPMResultElementsToMemoryTransformer();
         
         assertFalse(t.accept(null));
         
@@ -69,22 +69,22 @@ public class GeoCPMMaxToMemoryTransformerNGTest {
         final File f = File.createTempFile("test", "geocpmtests");
         f.deleteOnExit();
         
-        p.setGeocpmMax(f);
+        p.setGeocpmResultElements(f);
         assertTrue(t.accept(p));
     }
 
     /**
-     * Test of transform method, of class GeoCPMMaxToMemoryTransformer.
+     * Test of transform method, of class GeoCPMResultElementsToMemoryTransformer.
      */
     @Test
     public void testTransform() throws Exception {
         printCurrentTestName();
         
-        final GeoCPMMaxToMemoryTransformer t = new GeoCPMMaxToMemoryTransformer();
+        final GeoCPMResultElementsToMemoryTransformer t = new GeoCPMResultElementsToMemoryTransformer();
         GeoCPMProject p = new GeoCPMProject();
         
         final InputStreamReader r = new InputStreamReader(
-                getClass().getResourceAsStream("GeoCPMMaxToMemoryTransformer_SimpleGeoCPMMax.aus"));
+                getClass().getResourceAsStream("GeoCPMResultElementsToMemoryTransformer_SimpleGeoCPMResultsElements.aus"));
         final File f = File.createTempFile("test", "geocpmtests");
         f.deleteOnExit();
         
@@ -95,7 +95,7 @@ public class GeoCPMMaxToMemoryTransformerNGTest {
         }
         o.flush();
         
-        p.setGeocpmMax(f);
+        p.setGeocpmResultElements(f);
         
         final List<Triangle> triangles = new ArrayList<>(66);
         for(int i = 0; i < 66; ++i) {
@@ -105,23 +105,26 @@ public class GeoCPMMaxToMemoryTransformerNGTest {
         
         t.transform(p);
         
-        assertEquals(triangles.get(0).getMaxWaterlevel(), 4.3429579735);
-        assertEquals(triangles.get(22).getMaxWaterlevel(), 3.2579729557);
-        assertEquals(triangles.get(45).getMaxWaterlevel(), 3.3255915642);
-        assertEquals(triangles.get(65).getMaxWaterlevel(), 3.3678700924);
+        for(Triangle tr : triangles) {
+            assertNotNull(tr.getWaterlevels());
+        }
+        
+        assertEquals(triangles.get(1).getWaterlevels().size(), 3254);
+        assertEquals(triangles.get(34).getWaterlevels().size(), 3104);
+        assertEquals(triangles.get(62).getWaterlevels().size(), 106);
     }
     
     @Test(expectedExceptions = IllegalStateException.class)
     public void testTransform_missingTriangle() throws Exception {
         printCurrentTestName();
         
-        final GeoCPMMaxToMemoryTransformer t = new GeoCPMMaxToMemoryTransformer();
+        final GeoCPMResultElementsToMemoryTransformer t = new GeoCPMResultElementsToMemoryTransformer();
         GeoCPMProject p = new GeoCPMProject();
         
         final File f = File.createTempFile("test", "geocpmtests");
         f.deleteOnExit();
         
-        p.setGeocpmMax(f);
+        p.setGeocpmResultElements(f);
         
         final List<Triangle> triangles = new ArrayList<>(66);
         for(int i = 0; i < 65; ++i) {
@@ -139,11 +142,11 @@ public class GeoCPMMaxToMemoryTransformerNGTest {
     public void testTransform_wrongTriangleRef() throws Exception {
         printCurrentTestName();
         
-        final GeoCPMMaxToMemoryTransformer t = new GeoCPMMaxToMemoryTransformer();
+        final GeoCPMResultElementsToMemoryTransformer t = new GeoCPMResultElementsToMemoryTransformer();
         GeoCPMProject p = new GeoCPMProject();
         
         final InputStreamReader r = new InputStreamReader(
-                getClass().getResourceAsStream("GeoCPMMaxToMemoryTransformer_SimpleGeoCPMMax.aus"));
+                getClass().getResourceAsStream("GeoCPMResultElementsToMemoryTransformer_SimpleGeoCPMResultsElements.aus"));
         final File f = File.createTempFile("test", "geocpmtests");
         f.deleteOnExit();
         
@@ -154,7 +157,7 @@ public class GeoCPMMaxToMemoryTransformerNGTest {
         }
         o.flush();
         
-        p.setGeocpmMax(f);
+        p.setGeocpmResultElements(f);
         
         final List<Triangle> triangles = new ArrayList<>(66);
         for(int i = 0; i < 34; ++i) {

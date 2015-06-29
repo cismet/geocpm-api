@@ -13,8 +13,11 @@ import java.io.IOException;
 
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
+import de.cismet.cids.custom.wupp.geocpm.api.GeoCPMConstants;
 import de.cismet.cids.custom.wupp.geocpm.api.GeoCPMProject;
 import de.cismet.cids.custom.wupp.geocpm.api.entity.Triangle;
 
@@ -24,11 +27,7 @@ import de.cismet.cids.custom.wupp.geocpm.api.entity.Triangle;
  * @author   martin.scholl@cismet.de
  * @version  1.0
  */
-public class GeoCPMMaxToMemoryTransformer implements GeoCPMProjectTransformer {
-
-    //~ Static fields/initializers ---------------------------------------------
-
-    public static final String MAX_REGEX = "^\\d+ +\\d+\\.\\d+$";
+public class GeoCPMResultElementsToMemoryTransformer implements GeoCPMProjectTransformer {
 
     //~ Methods ----------------------------------------------------------------
 
@@ -41,7 +40,7 @@ public class GeoCPMMaxToMemoryTransformer implements GeoCPMProjectTransformer {
      */
     @Override
     public boolean accept(final GeoCPMProject obj) {
-        return (obj != null) && (obj.getGeocpmMax() != null) && obj.getGeocpmMax().canRead()
+        return (obj != null) && (obj.getGeocpmResultElements() != null) && obj.getGeocpmResultElements().canRead()
                     && (obj.getTriangles() != null);
     }
 
@@ -71,23 +70,34 @@ public class GeoCPMMaxToMemoryTransformer implements GeoCPMProjectTransformer {
             }
         }
 
-        try(final BufferedReader br = new BufferedReader(new FileReader(obj.getGeocpmMax()))) {
-            br.lines()
-                    .filter(line -> line.matches(MAX_REGEX))
-                    .forEach(line -> {
-                        final String[] s = line.split(" +"); // NOI18N
-                        final int tId = Integer.parseInt(s[0]);
+        try(final BufferedReader br = new BufferedReader(new FileReader(obj.getGeocpmResultElements()))) {
+            // zero based linecount in accordance with spec v1.2
+            int lineNo = 0;
+            String line;
+            while((line = br.readLine()) != null) {
+                if(lineNo >= triangles.size()) {
+                    throw new IllegalStateException("wrong triangle reference: " + line); // NOI18N)
+                }
 
-                        if(tId >= triangles.size()) {
-                            throw new IllegalStateException("wrong triangle reference: " + line); // NOI18N
-                        }
+                final String[] s = line.split(GeoCPMConstants.DEFAULT_FIELD_SEP);
 
-                        triangles.get(tId).setMaxWaterlevel(Double.parseDouble(s[1]));
-                    });
+
+                final Map<Double, Double> levels = new HashMap<>();
+                for(int i = 1; i < s.length - 1; i+=2) {
+                    final double time = Double.parseDouble(s[i]);
+                    final double waterlevel = Double.parseDouble(s[i + 1]);
+
+                    levels.put(time, waterlevel);
+                }
+
+                triangles.get(lineNo).setWaterlevels(levels);
+
+                lineNo++;
+            }
 
             return obj;
         } catch (final IOException ex) {
-            throw new TransformException("cannot read geocpm max file", ex); // NOI18N
+            throw new TransformException("cannot read geocpm result elements file", ex); // NOI18N
         }
         //J+
     }

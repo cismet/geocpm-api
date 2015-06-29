@@ -9,6 +9,8 @@ package de.cismet.cids.custom.wupp.geocpm.api.entity;
 
 import lombok.Data;
 
+import java.util.Map;
+
 /**
  * DOCUMENT ME!
  *
@@ -28,7 +30,9 @@ public class Triangle extends CommonEntity {
     private double breakingEdgeB;
     private double breakingEdgeC;
 
-    private double waterlevel;
+    private double maxWaterlevel;
+    // key=time in seconds since beginning, value waterlevel
+    private Map<Double, Double> waterlevels;
 
     //~ Constructors -----------------------------------------------------------
 
