@@ -7,7 +7,7 @@
 ****************************************************/
 package de.cismet.cids.custom.wupp.geocpm.api.entity;
 
-import lombok.Getter;
+import lombok.Data;
 
 /**
  * DOCUMENT ME!
@@ -15,18 +15,20 @@ import lombok.Getter;
  * @author   martin.scholl@cismet.de
  * @version  1.0
  */
-@Getter
+@Data
 public class Triangle extends CommonEntity {
 
     //~ Instance fields --------------------------------------------------------
 
-    private final Point a;
-    private final Point b;
-    private final Point c;
+    private Point a;
+    private Point b;
+    private Point c;
 
-    private final double breakingEdgeA;
-    private final double breakingEdgeB;
-    private final double breakingEdgeC;
+    private double breakingEdgeA;
+    private double breakingEdgeB;
+    private double breakingEdgeC;
+
+    private double waterlevel;
 
     //~ Constructors -----------------------------------------------------------
 
