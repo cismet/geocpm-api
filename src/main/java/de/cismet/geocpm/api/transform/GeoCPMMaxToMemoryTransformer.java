@@ -12,10 +12,12 @@ import java.io.FileReader;
 import java.io.IOException;
 
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.List;
 
 import de.cismet.geocpm.api.GeoCPMProject;
+import de.cismet.geocpm.api.GeoCPMResult;
+import de.cismet.geocpm.api.GeoCPMUtilities;
+import de.cismet.geocpm.api.entity.Result;
 import de.cismet.geocpm.api.entity.Triangle;
 
 /**
@@ -41,8 +43,15 @@ public class GeoCPMMaxToMemoryTransformer implements GeoCPMProjectTransformer {
      */
     @Override
     public boolean accept(final GeoCPMProject obj) {
-        return (obj != null) && (obj.getGeocpmMax() != null) && obj.getGeocpmMax().canRead()
-                    && (obj.getTriangles() != null);
+        boolean accept = (obj != null) && (obj.getResults() != null) && (obj.getTriangles() != null);
+
+        if (accept) {
+            for (final GeoCPMResult result : obj.getResults()) {
+                accept = accept && (result.getGeocpmMax() != null) && result.getGeocpmMax().canRead();
+            }
+        }
+
+        return accept;
     }
 
     /**
@@ -54,42 +63,58 @@ public class GeoCPMMaxToMemoryTransformer implements GeoCPMProjectTransformer {
      */
     @Override
     public GeoCPMProject transform(final GeoCPMProject obj) {
-        //J-
-        // jalopy only supports java 1.6
-        final List<Triangle> triangles;
-        if(obj.getTriangles() instanceof List) {
-            triangles = (List)obj.getTriangles();
-        } else {
-            triangles = new ArrayList<>(obj.getTriangles());
-        }
-        Collections.sort(triangles);
+        GeoCPMUtilities.checkMissingTriangles(obj);
+        final List<Triangle> triangles = (List)obj.getTriangles();
 
-        for(int i = 0; i < triangles.size(); ++i) {
-            if(i != triangles.get(i).getId()) {
-                throw new IllegalStateException("expected triangle id '" + i + "' but found '" // NOI18N
-                        + triangles.get(i).getId() + "', missing triangle?"); // NOI18N
-            }
-        }
+        for (final GeoCPMResult result : obj.getResults()) {
+            //J-
+            // jalopy only supports java 1.6
+            try(final BufferedReader br = new BufferedReader(new FileReader(result.getGeocpmMax()))) {
+                String line;
 
-        try(final BufferedReader br = new BufferedReader(new FileReader(obj.getGeocpmMax()))) {
-            String line;
-            while((line = br.readLine()) != null) {
-                if(line.matches(MAX_REGEX)) {
-                    final String[] s = line.split(" +"); // NOI18N
-                    final int tId = Integer.parseInt(s[0]);
-
-                    if(tId >= triangles.size()) {
-                        throw new IllegalStateException("wrong triangle reference: " + line); // NOI18N
+                final List<Result> results;
+                if(result.getResults() == null) {
+                    // init result collection
+                    results = new ArrayList<>(triangles.size());
+                    for(int i = 0; i < triangles.size(); ++i) {
+                        results.add(new Result(i));
                     }
-
-                    triangles.get(tId).setMaxWaterlevel(Double.parseDouble(s[1]));
+                    result.setResults(results);
+                } else {
+                    GeoCPMUtilities.sortResults(obj);
+                    results = (List)result.getResults();
                 }
-            }
 
-            return obj;
-        } catch (final IOException ex) {
-            throw new TransformException("cannot read geocpm max file", ex); // NOI18N
+                result.setResults(results);
+
+                while((line = br.readLine()) != null) {
+                    if(line.matches(MAX_REGEX)) {
+                        final String[] s = line.split(" +"); // NOI18N
+                        final int tId = Integer.parseInt(s[0]);
+
+                        if(tId >= triangles.size()) {
+                            throw new IllegalStateException("wrong triangle reference: " + line); // NOI18N
+                        }
+
+                        final Result r;
+                        if(tId >= results.size()) {
+                            // ensure that if results are there they are of equal count
+                            throw new IllegalStateException("wrong results reference: " + line); // NOI18N
+                        } else {
+                            r = results.get(tId);
+                        }
+                        r.setMaxWaterlevel(Double.parseDouble(s[1]));
+                        results.set(tId, r);
+                    }
+                }
+
+
+            } catch (final IOException ex) {
+                throw new TransformException("cannot read geocpm max file", ex); // NOI18N
+            }
+            //J+
         }
-        //J+
+
+        return obj;
     }
 }

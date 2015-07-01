@@ -7,8 +7,8 @@
 ****************************************************/
 package de.cismet.geocpm.api.entity;
 
-import lombok.Getter;
-import lombok.ToString;
+import lombok.EqualsAndHashCode;
+import lombok.Value;
 
 /**
  * DOCUMENT ME!
@@ -16,8 +16,8 @@ import lombok.ToString;
  * @author   martin.scholl@cismet.de
  * @version  1.0
  */
-@Getter
-@ToString
+@Value
+@EqualsAndHashCode(callSuper = true)
 public class Point extends CommonEntity {
 
     //~ Instance fields --------------------------------------------------------

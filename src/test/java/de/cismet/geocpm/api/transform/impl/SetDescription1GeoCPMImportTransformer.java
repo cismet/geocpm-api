@@ -10,7 +10,7 @@ import java.util.Collection;
  * @author martin.scholl@cismet.de
  * @version 1.0
  */
-public class SetAnnuality1GeoCPMImportTransformer implements GeoCPMImportTransformer {
+public class SetDescription1GeoCPMImportTransformer implements GeoCPMImportTransformer {
 
     @Override
     public boolean accept(Object obj) {
@@ -22,18 +22,15 @@ public class SetAnnuality1GeoCPMImportTransformer implements GeoCPMImportTransfo
         final Collection<GeoCPMProject> c = new ArrayList<>();
         
         GeoCPMProject p = new GeoCPMProject();
-        p.setDescription("p1");
-        p.setAnnuality(1);
+        p.setDescription("1");
         c.add(p);
         
         p = new GeoCPMProject();
-        p.setDescription("p2");
-        p.setAnnuality(1);
+        p.setDescription("1");
         c.add(p);
         
         p = new GeoCPMProject();
-        p.setDescription("p3");
-        p.setAnnuality(1);
+        p.setDescription("1");
         c.add(p);
         
         return c;

@@ -33,14 +33,11 @@ public class GeoCPMProject {
 
     private String name;
     private String description;
-    private int annuality;
     private File geocpmEin;
     private File geocpmSubinfo;
-    private File geocpmInfo;
-    private File geocpmMax;
-    private File geocpmResultElements;
 
     // NOTE: maybe these collections will consume too much space, then it has to be cached on disk
     private Collection<Triangle> triangles;
     private Collection<Point> points;
+    private Collection<GeoCPMResult> results;
 }

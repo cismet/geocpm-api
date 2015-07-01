@@ -8,8 +8,7 @@
 package de.cismet.geocpm.api.entity;
 
 import lombok.Data;
-
-import java.util.Map;
+import lombok.EqualsAndHashCode;
 
 /**
  * DOCUMENT ME!
@@ -18,6 +17,7 @@ import java.util.Map;
  * @version  1.0
  */
 @Data
+@EqualsAndHashCode(callSuper = true)
 public class Triangle extends CommonEntity {
 
     //~ Instance fields --------------------------------------------------------
@@ -29,10 +29,6 @@ public class Triangle extends CommonEntity {
     private double breakingEdgeA;
     private double breakingEdgeB;
     private double breakingEdgeC;
-
-    private double maxWaterlevel;
-    // key=time in seconds since beginning, value waterlevel
-    private Map<Double, Double> waterlevels;
 
     //~ Constructors -----------------------------------------------------------
 

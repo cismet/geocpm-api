@@ -12,13 +12,15 @@ import java.io.FileReader;
 import java.io.IOException;
 
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
 import de.cismet.geocpm.api.GeoCPMConstants;
 import de.cismet.geocpm.api.GeoCPMProject;
+import de.cismet.geocpm.api.GeoCPMResult;
+import de.cismet.geocpm.api.GeoCPMUtilities;
+import de.cismet.geocpm.api.entity.Result;
 import de.cismet.geocpm.api.entity.Triangle;
 
 /**
@@ -40,8 +42,16 @@ public class GeoCPMResultElementsToMemoryTransformer implements GeoCPMProjectTra
      */
     @Override
     public boolean accept(final GeoCPMProject obj) {
-        return (obj != null) && (obj.getGeocpmResultElements() != null) && obj.getGeocpmResultElements().canRead()
-                    && (obj.getTriangles() != null);
+        boolean accept = (obj != null) && (obj.getResults() != null) && (obj.getTriangles() != null);
+
+        if (accept) {
+            for (final GeoCPMResult result : obj.getResults()) {
+                accept = accept && (result.getGeocpmResultElements() != null)
+                            && result.getGeocpmResultElements().canRead();
+            }
+        }
+
+        return accept;
     }
 
     /**
@@ -53,52 +63,62 @@ public class GeoCPMResultElementsToMemoryTransformer implements GeoCPMProjectTra
      */
     @Override
     public GeoCPMProject transform(final GeoCPMProject obj) {
-        //J-
-        // jalopy only supports java 1.6
-        final List<Triangle> triangles;
-        if(obj.getTriangles() instanceof List) {
-            triangles = (List)obj.getTriangles();
-        } else {
-            triangles = new ArrayList<>(obj.getTriangles());
-        }
-        Collections.sort(triangles);
+        GeoCPMUtilities.checkMissingTriangles(obj);
+        final List<Triangle> triangles = (List)obj.getTriangles();
 
-        for(int i = 0; i < triangles.size(); ++i) {
-            if(i != triangles.get(i).getId()) {
-                throw new IllegalStateException("expected triangle id '" + i + "' but found '" // NOI18N
-                        + triangles.get(i).getId() + "', missing triangle?"); // NOI18N
-            }
-        }
-
-        try(final BufferedReader br = new BufferedReader(new FileReader(obj.getGeocpmResultElements()))) {
-            // zero based linecount in accordance with spec v1.2
-            int lineNo = 0;
-            String line;
-            while((line = br.readLine()) != null) {
-                if(lineNo >= triangles.size()) {
-                    throw new IllegalStateException("wrong triangle reference: " + line); // NOI18N)
+        for (final GeoCPMResult result : obj.getResults()) {
+            //J-
+            // jalopy only supports java 1.6
+            try(final BufferedReader br = new BufferedReader(new FileReader(result.getGeocpmResultElements()))) {
+                final List<Result> results;
+                if(result.getResults() == null) {
+                    // init result collection
+                    results = new ArrayList<>(triangles.size());
+                    for(int i = 0; i < triangles.size(); ++i) {
+                        results.add(new Result(i));
+                    }
+                    result.setResults(results);
+                } else {
+                    GeoCPMUtilities.sortResults(obj);
+                    results = (List)result.getResults();
                 }
 
-                final String[] s = line.split(GeoCPMConstants.DEFAULT_FIELD_SEP);
+                // zero based linecount in accordance with spec v1.2
+                int tId = 0;
+                String line;
+                while((line = br.readLine()) != null) {
+                    if(tId >= triangles.size()) {
+                        throw new IllegalStateException("wrong triangle reference: " + line); // NOI18N)
+                    }
 
+                    final String[] s = line.split(GeoCPMConstants.DEFAULT_FIELD_SEP);
 
-                final Map<Double, Double> levels = new HashMap<>();
-                for(int i = 1; i < s.length - 1; i+=2) {
-                    final double time = Double.parseDouble(s[i]);
-                    final double waterlevel = Double.parseDouble(s[i + 1]);
+                    final Map<Double, Double> levels = new HashMap<>();
+                    for(int i = 1; i < s.length - 1; i+=2) {
+                        final double time = Double.parseDouble(s[i]);
+                        final double waterlevel = Double.parseDouble(s[i + 1]);
 
-                    levels.put(time, waterlevel);
+                        levels.put(time, waterlevel);
+                    }
+
+                    final Result r;
+                    if(tId >= results.size()) {
+                        // ensure that if results are there they are of equal count
+                        throw new IllegalStateException("wrong results reference: " + line); // NOI18N
+                    } else {
+                        r = results.get(tId);
+                    }
+                    r.setWaterlevels(levels);
+                    results.set(tId, r);
+
+                    tId++;
                 }
-
-                triangles.get(lineNo).setWaterlevels(levels);
-
-                lineNo++;
+            } catch (final IOException ex) {
+                throw new TransformException("cannot read geocpm result elements file", ex); // NOI18N
             }
-
-            return obj;
-        } catch (final IOException ex) {
-            throw new TransformException("cannot read geocpm result elements file", ex); // NOI18N
+            //J+
         }
-        //J+
+
+        return obj;
     }
 }

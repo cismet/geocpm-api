@@ -22,7 +22,7 @@ public class CountingLoopGeoCPMProjectTransformer implements GeoCPMProjectTransf
     
     @Override
     public boolean accept(GeoCPMProject obj) {
-        return obj.getAnnuality() == expectedStep;
+        return obj.getDescription().equals(String.valueOf(expectedStep));
     }
 
     @Override
@@ -35,7 +35,7 @@ public class CountingLoopGeoCPMProjectTransformer implements GeoCPMProjectTransf
             }
         }
         
-        obj.setAnnuality(obj.getAnnuality() + 1);
+        obj.setDescription(String.valueOf(Integer.parseInt(obj.getDescription()) + 1));
         obj.setName((obj.getName() == null ? "" : obj.getName() + " ") + expectedStep);
         
         return obj;

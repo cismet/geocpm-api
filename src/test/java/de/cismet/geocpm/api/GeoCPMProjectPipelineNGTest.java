@@ -1,8 +1,5 @@
 package de.cismet.geocpm.api;
 
-import de.cismet.geocpm.api.GeoCPMProjectPipeline;
-import de.cismet.geocpm.api.ConfigurationException;
-import de.cismet.geocpm.api.GeoCPMProject;
 import de.cismet.geocpm.api.transform.impl.Sleep500GeoCPMProjectTransformer;
 import de.cismet.geocpm.api.transform.GeoCPMProjectTransformer;
 import de.cismet.geocpm.api.transform.impl.CountingLoopGeoCPMProjectTransformer;
@@ -92,7 +89,7 @@ public class GeoCPMProjectPipelineNGTest {
         printCurrentTestName();
         
         GeoCPMProject proj = new GeoCPMProject();
-        proj.setAnnuality(0);
+        proj.setDescription("0");
         
         final List<GeoCPMProjectTransformer> trans = Arrays.asList((GeoCPMProjectTransformer)
                 new CountingSleepGeoCPMProjectTransformer(100, 0),
@@ -114,7 +111,7 @@ public class GeoCPMProjectPipelineNGTest {
         printCurrentTestName();
         
         GeoCPMProject proj = new GeoCPMProject();
-        proj.setAnnuality(0);
+        proj.setDescription("0");
         
         final List<GeoCPMProjectTransformer> trans = Arrays.asList((GeoCPMProjectTransformer)
                 new CountingSleepGeoCPMProjectTransformer(100, 0),
@@ -134,7 +131,7 @@ public class GeoCPMProjectPipelineNGTest {
         printCurrentTestName();
         
         GeoCPMProject proj = new GeoCPMProject();
-        proj.setAnnuality(0);
+        proj.setDescription("0");
         
         final List<GeoCPMProjectTransformer> trans = Arrays.asList((GeoCPMProjectTransformer)
                 new CountingSleepGeoCPMProjectTransformer(100, 4),
@@ -154,7 +151,7 @@ public class GeoCPMProjectPipelineNGTest {
         printCurrentTestName();
         
         GeoCPMProject proj = new GeoCPMProject();
-        proj.setAnnuality(0);
+        proj.setDescription("0");
         
         final List<GeoCPMProjectTransformer> trans = Arrays.asList((GeoCPMProjectTransformer)
                 new CountingSleepGeoCPMProjectTransformer(100, 0),
@@ -174,7 +171,7 @@ public class GeoCPMProjectPipelineNGTest {
         printCurrentTestName();
         
         GeoCPMProject proj = new GeoCPMProject();
-        proj.setAnnuality(0);
+        proj.setDescription("0");
         
         final List<GeoCPMProjectTransformer> trans = Arrays.asList((GeoCPMProjectTransformer)
                 new CountingSleepGeoCPMProjectTransformer(10000, 0)
@@ -189,7 +186,7 @@ public class GeoCPMProjectPipelineNGTest {
         Thread.sleep(100);
         f.cancel(true);
         
-        assertEquals(proj.getAnnuality(), 0);
+        assertEquals(proj.getDescription(), "0");
     }    
     
     @Test
@@ -197,7 +194,7 @@ public class GeoCPMProjectPipelineNGTest {
         printCurrentTestName();
         
         GeoCPMProject proj = new GeoCPMProject();
-        proj.setAnnuality(0);
+        proj.setDescription("0");
         
         final List<GeoCPMProjectTransformer> trans = Arrays.asList((GeoCPMProjectTransformer)
                 new CountingLoopGeoCPMProjectTransformer(100000000000000l, 0)
@@ -212,7 +209,7 @@ public class GeoCPMProjectPipelineNGTest {
         Thread.sleep(100);
         f.cancel(true);
         
-        assertEquals(proj.getAnnuality(), 0);
+        assertEquals(proj.getDescription(), "0");
     }
      
     @Test()
@@ -220,7 +217,7 @@ public class GeoCPMProjectPipelineNGTest {
         printCurrentTestName();
         
         GeoCPMProject proj = new GeoCPMProject();
-        proj.setAnnuality(0);
+        proj.setDescription("0");
         
         final List<GeoCPMProjectTransformer> trans = Arrays.asList((GeoCPMProjectTransformer)
                 new CountingSleepGeoCPMProjectTransformer(100, 0),
@@ -241,7 +238,7 @@ public class GeoCPMProjectPipelineNGTest {
             f.get();
             fail();
         } catch (CancellationException ex) {
-            assertEquals(proj.getAnnuality(), 2);
+            assertEquals(proj.getDescription(), "2");
         }
     }  
 }
