@@ -29,6 +29,7 @@ public class GeoCPMResult {
     private final int annuality;
 
     private File geocpmInfo;
+    private File geocpmSubinfo;
     private File geocpmMax;
     private File geocpmResultElements;
 

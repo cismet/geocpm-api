@@ -34,7 +34,6 @@ public class GeoCPMProject {
     private String name;
     private String description;
     private File geocpmEin;
-    private File geocpmSubinfo;
 
     // NOTE: maybe these collections will consume too much space, then it has to be cached on disk
     private Collection<Triangle> triangles;
