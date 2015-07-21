@@ -138,7 +138,11 @@
                         </configuration>
                     </execution>
                 </executions>
-            </plugin>  
+            </plugin>
+            <plugin>
+                <artifactId>maven-release-plugin</artifactId>
+                <version>2.5.2</version>
+            </plugin>
             <!-- only needed for pmd -->
             <!--            <plugin>
                 <groupId>org.projectlombok</groupId>
