@@ -125,7 +125,7 @@ public class GeoCPMUtilitiesNGTest {
         for(GeoCPMResult gRes : proj.getResults()) {
             
             assertTrue(gRes.getResults() instanceof List);
-            final List<Result> r = (List)gRes.getResults();
+            final List<Result> r = (List<Result>)gRes.getResults();
             
             for(int i = 0; i < r.size(); ++i) {
                 assertEquals(r.get(i).getId(), i);

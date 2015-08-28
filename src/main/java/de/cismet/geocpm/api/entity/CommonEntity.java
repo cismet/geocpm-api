@@ -11,7 +11,7 @@ import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 
 /**
- * DOCUMENT ME!
+ * Base entity of GeoCPM entities (GeoCPM API Spec v1.2 (05.10.2011)).
  *
  * @author   martin.scholl@cismet.de
  * @version  1.0

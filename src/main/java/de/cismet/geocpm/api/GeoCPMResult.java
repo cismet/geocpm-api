@@ -16,7 +16,7 @@ import java.util.Collection;
 import de.cismet.geocpm.api.entity.Result;
 
 /**
- * DOCUMENT ME!
+ * Holds result information of a GeoCPM run (GeoCPM API Spec v1.2 (05.10.2011)) that might be processed further.
  *
  * @author   martin.scholl@cismet.de
  * @version  1.0

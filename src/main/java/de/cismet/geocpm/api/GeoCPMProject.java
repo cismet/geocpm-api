@@ -19,7 +19,8 @@ import de.cismet.geocpm.api.entity.Point;
 import de.cismet.geocpm.api.entity.Triangle;
 
 /**
- * DOCUMENT ME!
+ * Base class holding the core info of a GeoCPM project (GeoCPM API Spec v1.2 (05.10.2011)). Basically, it contains the
+ * relevant content of a GeoCPM.ein file and serves as IO for the transformers.
  *
  * @author   martin.scholl@cismet.de
  * @version  1.0

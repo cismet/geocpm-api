@@ -26,6 +26,7 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
+import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.RejectedExecutionHandler;
 import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
@@ -39,9 +40,14 @@ import de.cismet.commons.utils.ProgressListener;
 
 import de.cismet.geocpm.api.transform.GeoCPMImportTransformer;
 import de.cismet.geocpm.api.transform.GeoCPMProjectTransformer;
+import de.cismet.geocpm.api.transform.Transformer;
 
 /**
- * DOCUMENT ME!
+ * Main point of operation of the framework. Does the actual import according to the provided configuration. Every
+ * invocation of <code>doImport</code> is separated thus it is safe to call from multiple threads arbitrary times.
+ * However, the number of parallel executions is limited to not exceed resources thus it might not yield better results
+ * if called too often. Please note, that this "limitation" is independent of the
+ * {@link GeoCPMConstants#CFG_PIPELINE_PARALLEL_EXECS} configuration.
  *
  * @author   martin.scholl@cismet.de
  * @version  1.0
@@ -68,33 +74,33 @@ public class GeoCPMImportOrchestrator {
     /**
      * Creates a new GeoCPMImportOrchestrator object.
      */
-    public GeoCPMImportOrchestrator() {
-        //J-
-        // jalopy only supports java 1.6
-        this.internalExecutor = CismetExecutors.newCachedLimitedThreadPool(5,
+    private GeoCPMImportOrchestrator() {
+        // java 8 not supported yet
+        this.internalExecutor = CismetExecutors.newCachedLimitedThreadPool(
+                5,
                 new CismetConcurrency.CismetThreadFactory(
-                        GEOCPM_THREADGROUP,
-                        "geocpm-import-orchestrator",                                                     // NOI18N
-                        new Thread.UncaughtExceptionHandler() {
+                    GEOCPM_THREADGROUP,
+                    "geocpm-import-orchestrator", // NOI18N
+                    new Thread.UncaughtExceptionHandler() {
 
-                            @Override
-                            public void uncaughtException(Thread t, Throwable e) {
-                                log.error("uncaught exception in thread, operation result unknown [thread=" + t + "]", e); // NOI18N
-                            }
+                        @Override
+                        public void uncaughtException(final Thread t, final Throwable e) {
+                            log.error("uncaught exception in thread, operation result unknown [thread=" + t + "]", e); // NOI18N
                         }
-                ),
+                    }),
                 new RejectedExecutionHandler() {
 
                     @Override
-                    public void rejectedExecution(Runnable r, ThreadPoolExecutor executor) {
-                        log.error("cannot execute internal task, too few resources? operation result unknown "  // NOI18N
-                            + "[runnable=" + r                                                              // NOI18N
-                            + "|executor=" + executor                                                       // NOI18N
-                            + "]"); // NOI18N
+                    public void rejectedExecution(final Runnable r, final ThreadPoolExecutor executor) {
+                        log.error(
+                            "cannot execute internal task, too few resources? operation result unknown " // NOI18N
+                                    + "[runnable="
+                                    + r                                                                  // NOI18N
+                                    + "|executor="
+                                    + executor                                                           // NOI18N
+                                    + "]");                                                              // NOI18N
                     }
-                }
-        );
-        //J+
+                });
 
         this.defaultConfiguration = buildDefaultConfiguration();
     }
@@ -106,8 +112,20 @@ public class GeoCPMImportOrchestrator {
      *
      * @return  DOCUMENT ME!
      */
+    public static GeoCPMImportOrchestrator newInstance() {
+        return new GeoCPMImportOrchestrator();
+    }
+
+    /**
+     * DOCUMENT ME!
+     *
+     * @return  DOCUMENT ME!
+     */
     private Properties buildDefaultConfiguration() {
         final Properties config = new Properties();
+
+        // NOTE: We load the first import transformer we find assuming there is only one. This operation is only
+        // convenience for the simple case of single transformer.
 
         final GeoCPMImportTransformer importTransformer = Lookup.getDefault().lookup(GeoCPMImportTransformer.class);
         if (importTransformer == null) {
@@ -148,23 +166,25 @@ public class GeoCPMImportOrchestrator {
     }
 
     /**
-     * DOCUMENT ME!
+     * Starts a new import process using the default configuration, no progress listener and the provided import object,
+     * see {@link #doImport(java.util.Properties, java.lang.Object, de.cismet.commons.utils.ProgressListener)}.
      *
-     * @param   importObj  DOCUMENT ME!
+     * @param   importObj  the object to process
      *
-     * @return  DOCUMENT ME!
+     * @return  a future that provides the final state of this import
      */
     public Future<ProgressEvent.State> doImport(@NonNull final Object importObj) {
         return doImport(defaultConfiguration, importObj, null);
     }
 
     /**
-     * DOCUMENT ME!
+     * Starts a new import process using the default configuration and the provided no progress listener and import
+     * object, see {@link #doImport(java.util.Properties, java.lang.Object, de.cismet.commons.utils.ProgressListener)}.
      *
-     * @param   importObj         DOCUMENT ME!
-     * @param   progressListener  DOCUMENT ME!
+     * @param   importObj         the object to process
+     * @param   progressListener  the progresslistener for this import
      *
-     * @return  DOCUMENT ME!
+     * @return  a future that provides the final state of this import
      */
     public Future<ProgressEvent.State> doImport(@NonNull final Object importObj,
             final ProgressListener progressListener) {
@@ -172,26 +192,39 @@ public class GeoCPMImportOrchestrator {
     }
 
     /**
-     * DOCUMENT ME!
+     * Starts a new import process using no progress listener and the provided configuration and import object, see
+     * {@link #doImport(java.util.Properties, java.lang.Object, de.cismet.commons.utils.ProgressListener)}.
      *
-     * @param   configuration  DOCUMENT ME!
-     * @param   importObj      DOCUMENT ME!
+     * @param   configuration  the configuration for the import
+     * @param   importObj      the object to process
      *
-     * @return  DOCUMENT ME!
+     * @return  a future that provides the final state of this import
      */
     public Future<ProgressEvent.State> doImport(@NonNull final Properties configuration,
             @NonNull final Object importObj) {
-        return internalExecutor.submit(new ImportTask(configuration, importObj, null));
+        return doImport(configuration, importObj, null);
     }
 
     /**
-     * DOCUMENT ME!
+     * Starts a new import process using the provided configuration, import object and progress listener. The
+     * configuration and the import object must not be null while the progress listener is optional. The import process
+     * will start right away if there are import threads available and will be queued otherwise. However, if there are
+     * too many requests at once a {@link RejectedExecutionException} will be thrown. Please note, that, apart from the
+     * <code>IllegalArgumentException</code> in case of <code>null</code> objects and the <code>
+     * RejectedExecutionException</code> no other exception is thrown. Any exception related to the import process
+     * itself must be obtained through the future that is returned by this operation. The import process may also be
+     * canceled using the future's {@link Future#cancel(boolean)} operation which should be used with <code>true</code>
+     * as an argument to ensure that the process will stop as soon as possible. Every transformer is requested to handle
+     * interrupts correctly.
      *
-     * @param   configuration     the configuration to use
-     * @param   importObj         DOCUMENT ME!
-     * @param   progressListener  DOCUMENT ME!
+     * @param   configuration     the configuration for the import
+     * @param   importObj         the object to process
+     * @param   progressListener  the progresslistener for this import
      *
-     * @return  DOCUMENT ME!
+     * @return  a future that provides the final state of this import
+     *
+     * @see     Future
+     * @see     Transformer
      */
     public Future<ProgressEvent.State> doImport(@NonNull final Properties configuration,
             @NonNull final Object importObj,
@@ -259,10 +292,7 @@ public class GeoCPMImportOrchestrator {
                             }
                         }));
 
-            //J-
-            // jalopy only supports java 1.6
             runningProjects = new ArrayList<>();
-            //J+
 
             // <editor-fold defaultstate="collapsed" desc="no of parallel executions">
             final String noOfParallelPipeLineThreads = config.getProperty(GeoCPMConstants.CFG_PIPELINE_PARALLEL_EXECS);
@@ -315,16 +345,14 @@ public class GeoCPMImportOrchestrator {
                     config);
             }
 
-            //J-
-            // jalopy only supports java 1.6
             try {
                 final Class<?> cImportTransformer = Class.forName(importTransformerFqcn);
-                if(!GeoCPMImportTransformer.class.isAssignableFrom(cImportTransformer)) {
+                if (!GeoCPMImportTransformer.class.isAssignableFrom(cImportTransformer)) {
                     throw new ConfigurationException("import transformer is not of type '" // NOI18N
-                            + GeoCPMImportTransformer.class.getCanonicalName() + "' (" // NOI18N
-                            + GeoCPMConstants.CFG_IMPORTER_FQCN + "): " + importTransformerFqcn, // NOI18N
-                    null,
-                    config);
+                                + GeoCPMImportTransformer.class.getCanonicalName() + "' (" // NOI18N
+                                + GeoCPMConstants.CFG_IMPORTER_FQCN + "): " + importTransformerFqcn, // NOI18N
+                        null,
+                        config);
                 }
                 importTransformer = (GeoCPMImportTransformer)cImportTransformer.newInstance();
             } catch (final ClassNotFoundException ex) {
@@ -338,16 +366,12 @@ public class GeoCPMImportOrchestrator {
                     ex,
                     config);
             }
-            //J+
 
             // </editor-fold>
 
             // <editor-fold defaultstate="collapsed" desc="project transformers">
 
-            //J-
-            // jalopy only supports java 1.6
             projectTransformers = new ArrayList<>();
-            //J+
             boolean continueSearch = true;
             int sequentialNumber = 1;
             while (continueSearch) {
@@ -365,16 +389,14 @@ public class GeoCPMImportOrchestrator {
                             config);
                     }
 
-                    //J-
-                    // jalopy only supports java 1.6
                     try {
                         final Class<?> cProjectTransformer = Class.forName(projectTransformerFqcn);
-                        if(!GeoCPMProjectTransformer.class.isAssignableFrom(cProjectTransformer)) {
+                        if (!GeoCPMProjectTransformer.class.isAssignableFrom(cProjectTransformer)) {
                             throw new ConfigurationException("project transformer is not of type '" // NOI18N
-                                    + GeoCPMProjectTransformer.class.getCanonicalName() + "' (" // NOI18N
-                                    + currentTransformerFqcnProp + "): " + projectTransformerFqcn, // NOI18N
-                            null,
-                            config);
+                                        + GeoCPMProjectTransformer.class.getCanonicalName() + "' (" // NOI18N
+                                        + currentTransformerFqcnProp + "): " + projectTransformerFqcn, // NOI18N
+                                null,
+                                config);
                         }
                         projectTransformers.add((GeoCPMProjectTransformer)cProjectTransformer.newInstance());
                     } catch (final ClassNotFoundException ex) {
@@ -388,7 +410,6 @@ public class GeoCPMImportOrchestrator {
                             ex,
                             config);
                     }
-                    //J+
 
                     sequentialNumber++;
                 }
@@ -453,10 +474,7 @@ public class GeoCPMImportOrchestrator {
                     new ProgressEvent(this, ProgressEvent.State.PROGRESSING, "GeoCPM Projects created")); // NOI18N
             }
 
-            //J-
-            // jalopy only supports java 1.6
             final Collection<Callable<GeoCPMProject>> projectTasks = new ArrayList<>(geocpmProjects.size());
-            //J+
             for (final GeoCPMProject project : geocpmProjects) {
                 projectTasks.add(new GeoCPMProjectPipeline(project, projectTransformers));
             }

@@ -69,42 +69,42 @@ public class GeoCPMImportOrchestratorNGTest {
     public void testDoImport_Object_nullObject() {
         printCurrentTestName();
         
-        new GeoCPMImportOrchestrator().doImport(null);
+        GeoCPMImportOrchestrator.newInstance().doImport(null);
     }
     
     @Test(expectedExceptions = IllegalArgumentException.class)
     public void testDoImport_Object_ProgressListener_nullObject() {
         printCurrentTestName();
         
-        new GeoCPMImportOrchestrator().doImport((Object)null, (ProgressListener)null);
+        GeoCPMImportOrchestrator.newInstance().doImport((Object)null, (ProgressListener)null);
     }
     
     @Test(expectedExceptions = IllegalArgumentException.class)
     public void testDoImport_Properties_Object_nullProperties() {
         printCurrentTestName();
         
-        new GeoCPMImportOrchestrator().doImport((Properties)null, (Object)null);
+        GeoCPMImportOrchestrator.newInstance().doImport((Properties)null, (Object)null);
     }
     
     @Test(expectedExceptions = IllegalArgumentException.class)
     public void testDoImport_Properties_Object_nullObject() {
         printCurrentTestName();
         
-        new GeoCPMImportOrchestrator().doImport(new Properties(), (Object)null);
+        GeoCPMImportOrchestrator.newInstance().doImport(new Properties(), (Object)null);
     }
     
     @Test(expectedExceptions = IllegalArgumentException.class)
     public void testDoImport_Configuration_Object_ProgressListener_nullConfiguration() {
         printCurrentTestName();
         
-        new GeoCPMImportOrchestrator().doImport(null, null, null);
+        GeoCPMImportOrchestrator.newInstance().doImport(null, null, null);
     }
     
     @Test(expectedExceptions = IllegalArgumentException.class)
     public void testDoImport_Configuration_Object_ProgressListener_nullObject() {
         printCurrentTestName();
         
-        new GeoCPMImportOrchestrator().doImport(new Properties(), null, null);
+        GeoCPMImportOrchestrator.newInstance().doImport(new Properties(), null, null);
     }
 
     /**
@@ -114,7 +114,7 @@ public class GeoCPMImportOrchestratorNGTest {
     public void testDoImport_defaultConfig_noLookup() throws Exception {
         printCurrentTestName();
         
-        final GeoCPMImportOrchestrator o = new GeoCPMImportOrchestrator();
+        final GeoCPMImportOrchestrator o = GeoCPMImportOrchestrator.newInstance();
         
         Field field = o.getClass().getDeclaredField("defaultConfiguration");
         field.setAccessible(true);
@@ -133,7 +133,7 @@ public class GeoCPMImportOrchestratorNGTest {
         
         MockLookup.add(new CountingLoopGeoCPMImportTransformer(5, 500));
         
-        final GeoCPMImportOrchestrator o = new GeoCPMImportOrchestrator();
+        final GeoCPMImportOrchestrator o = GeoCPMImportOrchestrator.newInstance();
         
         Field field = o.getClass().getDeclaredField("defaultConfiguration");
         field.setAccessible(true);
@@ -152,7 +152,7 @@ public class GeoCPMImportOrchestratorNGTest {
         
         MockLookup.add(new Sleep500GeoCPMProjectTransformer());
         
-        final GeoCPMImportOrchestrator o = new GeoCPMImportOrchestrator();
+        final GeoCPMImportOrchestrator o = GeoCPMImportOrchestrator.newInstance();
         
         Field field = o.getClass().getDeclaredField("defaultConfiguration");
         field.setAccessible(true);
@@ -172,7 +172,7 @@ public class GeoCPMImportOrchestratorNGTest {
         MockLookup.add(new Sleep500GeoCPMProjectTransformer());
         MockLookup.add(new CountingLoopGeoCPMImportTransformer());
         
-        final GeoCPMImportOrchestrator o = new GeoCPMImportOrchestrator();
+        final GeoCPMImportOrchestrator o = GeoCPMImportOrchestrator.newInstance();
         
         Field field = o.getClass().getDeclaredField("defaultConfiguration");
         field.setAccessible(true);
@@ -189,7 +189,7 @@ public class GeoCPMImportOrchestratorNGTest {
     public void testDoImport_defaultConfig_runNoop() throws Exception {
         printCurrentTestName();
         
-        final GeoCPMImportOrchestrator o = new GeoCPMImportOrchestrator();
+        final GeoCPMImportOrchestrator o = GeoCPMImportOrchestrator.newInstance();
         Future<ProgressEvent.State> f = o.doImport(new Object());
         
         assertEquals(f.get(), ProgressEvent.State.FINISHED);
@@ -199,7 +199,7 @@ public class GeoCPMImportOrchestratorNGTest {
     public void testDoImport_defaultConfig_runNoopProgressL() throws Exception {
         printCurrentTestName();
         
-        final GeoCPMImportOrchestrator o = new GeoCPMImportOrchestrator();
+        final GeoCPMImportOrchestrator o = GeoCPMImportOrchestrator.newInstance();
         
         final ProgressL progL = new ProgressL();
         Future<ProgressEvent.State> f = o.doImport(new Object(), progL);
@@ -215,7 +215,7 @@ public class GeoCPMImportOrchestratorNGTest {
         
         MockLookup.add(new CountingLoopGeoCPMImportTransformer(5, 10000));
         
-        final GeoCPMImportOrchestrator o = new GeoCPMImportOrchestrator();
+        final GeoCPMImportOrchestrator o = GeoCPMImportOrchestrator.newInstance();
         
         Future<ProgressEvent.State> f = o.doImport(new Object());
         f.cancel(true);
@@ -228,7 +228,7 @@ public class GeoCPMImportOrchestratorNGTest {
         
         MockLookup.add(new CountingLoopGeoCPMImportTransformer(5, 10000));
         
-        final GeoCPMImportOrchestrator o = new GeoCPMImportOrchestrator();
+        final GeoCPMImportOrchestrator o = GeoCPMImportOrchestrator.newInstance();
         
         Future<ProgressEvent.State> f = o.doImport(new Object());
         f.cancel(false);
@@ -241,7 +241,7 @@ public class GeoCPMImportOrchestratorNGTest {
         
         MockLookup.add(new CountingLoopGeoCPMImportTransformer());
         
-        final GeoCPMImportOrchestrator o = new GeoCPMImportOrchestrator();
+        final GeoCPMImportOrchestrator o = GeoCPMImportOrchestrator.newInstance();
         
         final ProgressL progL = new ProgressL();
         Future<ProgressEvent.State> f = o.doImport(new Object(), progL);
@@ -256,7 +256,7 @@ public class GeoCPMImportOrchestratorNGTest {
     public void testDoImport_customConfig_runBroken() throws Exception {
         printCurrentTestName();
         
-        final GeoCPMImportOrchestrator o = new GeoCPMImportOrchestrator();
+        final GeoCPMImportOrchestrator o = GeoCPMImportOrchestrator.newInstance();
         
         final Properties props = new Properties();
         props.load(getClass().getResourceAsStream("GeoCPMImportOrchestratorNGTest_noAcceptConfig.properties"));
@@ -270,7 +270,7 @@ public class GeoCPMImportOrchestratorNGTest {
     public void testDoImport_customConfig_run() throws Exception {
         printCurrentTestName();
         
-        final GeoCPMImportOrchestrator o = new GeoCPMImportOrchestrator();
+        final GeoCPMImportOrchestrator o = GeoCPMImportOrchestrator.newInstance();
         
         final Properties props = new Properties();
         props.load(getClass().getResourceAsStream("GeoCPMImportOrchestratorNGTest_simpleRunConfig.properties"));

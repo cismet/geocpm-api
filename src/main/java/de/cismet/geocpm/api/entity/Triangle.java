@@ -11,7 +11,8 @@ import lombok.Data;
 import lombok.EqualsAndHashCode;
 
 /**
- * DOCUMENT ME!
+ * GeoCPM triangle entity (GeoCPM API Spec v1.2 (05.10.2011)) holding three point entities that resemble the triangle
+ * corners as well as a possible alternative breaking edge height value.
  *
  * @author   martin.scholl@cismet.de
  * @version  1.0

@@ -15,7 +15,7 @@ import de.cismet.geocpm.api.entity.Result;
 import de.cismet.geocpm.api.entity.Triangle;
 
 /**
- * DOCUMENT ME!
+ * Some helpers and utilities for GeoCPM project processing.
  *
  * @author   martin.scholl@cismet.de
  * @version  1.0
@@ -44,10 +44,7 @@ public class GeoCPMUtilities {
             if (proj.getTriangles() instanceof List) {
                 triangles = (List)proj.getTriangles();
             } else {
-                //J-
-                // jalopy only supports java 1.6
                 triangles = new ArrayList<>(proj.getTriangles());
-                //J+
             }
             Collections.sort(triangles);
             proj.setTriangles(triangles);
@@ -55,7 +52,7 @@ public class GeoCPMUtilities {
     }
 
     /**
-     * DOCUMENT ME!
+     * Sorts the results of a given GeoCPMProject.
      *
      * @param  proj  DOCUMENT ME!
      */
@@ -68,10 +65,7 @@ public class GeoCPMUtilities {
                     if (gr.getResults() instanceof List) {
                         results = (List)gr.getResults();
                     } else {
-                        //J-
-                        // jalopy only supports java 1.6
                         results = new ArrayList<>(gr.getResults());
-                        //J+
                     }
                     Collections.sort(results);
                     gr.setResults(results);
@@ -86,7 +80,7 @@ public class GeoCPMUtilities {
      *
      * @param   proj  the project to check
      *
-     * @throws  IllegalStateException  DOCUMENT ME!
+     * @throws  IllegalStateException  if a triangle is missing inbetween
      *
      * @see     #sortTriangles(de.cismet.geocpm.api.GeoCPMProject)
      */

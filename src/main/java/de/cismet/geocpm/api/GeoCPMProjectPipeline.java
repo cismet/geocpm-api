@@ -19,7 +19,10 @@ import de.cismet.geocpm.api.transform.GeoCPMProjectTransformer;
 
 /**
  * By design changes the input project. If a call is canceled the state of the GeoCPMProject will remain as it is at the
- * very point the interrupt took place or the execution stopped respectively. There is no rollback.
+ * very point the interrupt took place or the execution stopped respectively. There is no rollback. <b>Mode of
+ * operation</b>: simply loops through the transformers, testing the acceptance of the input and executes the
+ * transformer. If any of the transformers does not accept the input {@link ConfigurationException} is thrown. Moreover,
+ * the execution may be stopped using {@link Thread#interrupt()}. Produces some debug output.
  *
  * @author   martin.scholl@cismet.de
  * @version  1.0
@@ -30,10 +33,8 @@ public class GeoCPMProjectPipeline implements Callable<GeoCPMProject> {
 
     //~ Instance fields --------------------------------------------------------
 
-    @NonNull
-    private GeoCPMProject project;
-    @NonNull
-    private final List<GeoCPMProjectTransformer> transformers;
+    @NonNull private GeoCPMProject project;
+    @NonNull private final List<GeoCPMProjectTransformer> transformers;
 
     //~ Methods ----------------------------------------------------------------
 

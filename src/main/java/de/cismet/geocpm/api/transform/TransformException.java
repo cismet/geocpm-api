@@ -10,7 +10,7 @@ package de.cismet.geocpm.api.transform;
 import lombok.Getter;
 
 /**
- * DOCUMENT ME!
+ * Exception to be thrown if there is an issue during the transformation of data.
  *
  * @author   martin.scholl@cismet.de
  * @version  1.0
@@ -19,8 +19,7 @@ public class TransformException extends RuntimeException {
 
     //~ Instance fields --------------------------------------------------------
 
-    @Getter
-    private final Object transformedObject;
+    @Getter private final Object transformedObject;
 
     //~ Constructors -----------------------------------------------------------
 
@@ -53,9 +52,9 @@ public class TransformException extends RuntimeException {
     /**
      * Creates a new TransformException object.
      *
-     * @param  transformedObject  DOCUMENT ME!
-     * @param  message            DOCUMENT ME!
-     * @param  cause              DOCUMENT ME!
+     * @param  transformedObject  the object that caused the transformation error
+     * @param  message            the detail message
+     * @param  cause              the causing exception
      */
     public TransformException(final Object transformedObject, final String message, final Exception cause) {
         super(message, cause);

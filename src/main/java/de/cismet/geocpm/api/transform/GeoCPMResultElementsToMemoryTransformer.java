@@ -24,7 +24,9 @@ import de.cismet.geocpm.api.entity.Result;
 import de.cismet.geocpm.api.entity.Triangle;
 
 /**
- * DOCUMENT ME!
+ * GeoCPM water level over time parser based on GeoCPM API Spec v1.2 (05.10.2011). Simple {@link Result} objects are
+ * produced for every result from the input files. Thus the result of this transformer is completely held in memory.
+ * Processes every annuality.
  *
  * @author   martin.scholl@cismet.de
  * @version  1.0
@@ -34,11 +36,13 @@ public class GeoCPMResultElementsToMemoryTransformer implements GeoCPMProjectTra
     //~ Methods ----------------------------------------------------------------
 
     /**
-     * DOCUMENT ME!
+     * Requires the input object to have results available and triangles set. Moreover, every result must have the
+     * ResultElements.aus file set and readable.
      *
-     * @param   obj  DOCUMENT ME!
+     * @param   obj  the GeoCPM object
      *
-     * @return  DOCUMENT ME!
+     * @return  true if the input object has results available and triangles set and the ResultElements.aus file is set
+     *          and readable
      */
     @Override
     public boolean accept(final GeoCPMProject obj) {
@@ -55,11 +59,17 @@ public class GeoCPMResultElementsToMemoryTransformer implements GeoCPMProjectTra
     }
 
     /**
-     * DOCUMENT ME!
+     * Reads every water level from the ResultsElements.aus input file of the given object. Does not hold a lock on the
+     * input file thus concurrent modification (e.g. with an external editor) will yield unexpected results. <b>Will
+     * override existing water level time series.</b> Any other possibly existing result will remain as it is.
      *
-     * @param   obj  DOCUMENT ME!
+     * @param   obj  the GeoCPM project to process
      *
-     * @return  DOCUMENT ME!
+     * @return  the very same GeoCPM project but with result entities containing water level time series from the input
+     *          file.
+     *
+     * @throws  IllegalStateException  if a result cannot be related to a triangle properly
+     * @throws  TransformException     if the results file cannot be read
      */
     @Override
     public GeoCPMProject transform(final GeoCPMProject obj) {
@@ -67,14 +77,12 @@ public class GeoCPMResultElementsToMemoryTransformer implements GeoCPMProjectTra
         final List<Triangle> triangles = (List)obj.getTriangles();
 
         for (final GeoCPMResult result : obj.getResults()) {
-            //J-
-            // jalopy only supports java 1.6
             try(final BufferedReader br = new BufferedReader(new FileReader(result.getGeocpmResultElements()))) {
                 final List<Result> results;
-                if(result.getResults() == null) {
+                if (result.getResults() == null) {
                     // init result collection
                     results = new ArrayList<>(triangles.size());
-                    for(int i = 0; i < triangles.size(); ++i) {
+                    for (int i = 0; i < triangles.size(); ++i) {
                         results.add(new Result(i));
                     }
                     result.setResults(results);
@@ -86,15 +94,15 @@ public class GeoCPMResultElementsToMemoryTransformer implements GeoCPMProjectTra
                 // zero based linecount in accordance with spec v1.2
                 int tId = 0;
                 String line;
-                while((line = br.readLine()) != null) {
-                    if(tId >= triangles.size()) {
+                while ((line = br.readLine()) != null) {
+                    if (tId >= triangles.size()) {
                         throw new IllegalStateException("wrong triangle reference: " + line); // NOI18N)
                     }
 
                     final String[] s = line.split(GeoCPMConstants.DEFAULT_FIELD_SEP);
 
                     final Map<Double, Double> levels = new HashMap<>();
-                    for(int i = 1; i < s.length - 1; i+=2) {
+                    for (int i = 1; i < (s.length - 1); i += 2) {
                         final double time = Double.parseDouble(s[i]);
                         final double waterlevel = Double.parseDouble(s[i + 1]);
 
@@ -102,7 +110,7 @@ public class GeoCPMResultElementsToMemoryTransformer implements GeoCPMProjectTra
                     }
 
                     final Result r;
-                    if(tId >= results.size()) {
+                    if (tId >= results.size()) {
                         // ensure that if results are there they are of equal count
                         throw new IllegalStateException("wrong results reference: " + line); // NOI18N
                     } else {
@@ -116,7 +124,6 @@ public class GeoCPMResultElementsToMemoryTransformer implements GeoCPMProjectTra
             } catch (final IOException ex) {
                 throw new TransformException("cannot read geocpm result elements file", ex); // NOI18N
             }
-            //J+
         }
 
         return obj;

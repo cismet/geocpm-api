@@ -15,7 +15,7 @@ import java.util.Collection;
 import de.cismet.geocpm.api.GeoCPMProject;
 
 /**
- * DOCUMENT ME!
+ * NoOp transformer accepting all input but in turn only provides an empty collection as a transformation result.
  *
  * @author   martin.scholl@cismet.de
  * @version  1.0

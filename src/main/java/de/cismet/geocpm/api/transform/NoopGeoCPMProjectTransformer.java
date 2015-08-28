@@ -10,7 +10,7 @@ package de.cismet.geocpm.api.transform;
 import de.cismet.geocpm.api.GeoCPMProject;
 
 /**
- * DOCUMENT ME!
+ * NoOp transformer that accepts any GeoCPM project and returns the input object without any processing.
  *
  * @author   martin.scholl@cismet.de
  * @version  1.0

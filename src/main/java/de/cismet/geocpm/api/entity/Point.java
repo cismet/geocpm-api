@@ -11,7 +11,7 @@ import lombok.EqualsAndHashCode;
 import lombok.Value;
 
 /**
- * DOCUMENT ME!
+ * GeoCPM point entity (GeoCPM API Spec v1.2 (05.10.2011)).
  *
  * @author   martin.scholl@cismet.de
  * @version  1.0

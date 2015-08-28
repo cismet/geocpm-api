@@ -12,7 +12,7 @@ import lombok.Getter;
 import java.util.Properties;
 
 /**
- * DOCUMENT ME!
+ * Exception to be thrown at runtime if the configuration of a project does not fit the input or vice versa.
  *
  * @author   martin.scholl@cismet.de
  * @version  1.0

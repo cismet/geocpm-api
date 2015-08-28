@@ -10,7 +10,8 @@ package de.cismet.geocpm.api.transform;
 import de.cismet.geocpm.api.GeoCPMProject;
 
 /**
- * DOCUMENT ME!
+ * Transformer reflecting the filter pattern to enable chaining of transformations of GeoCPM projects so that they
+ * ultimately are processed as needed.
  *
  * @author   martin.scholl@cismet.de
  * @version  1.0

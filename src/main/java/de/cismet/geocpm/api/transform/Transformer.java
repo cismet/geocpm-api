@@ -8,7 +8,9 @@
 package de.cismet.geocpm.api.transform;
 
 /**
- * DOCUMENT ME!
+ * Base Transformer to transform object <code>I</code> to object <code>O</code>. Transformer implementations should be
+ * implemented in a way that they are thread-safe. Moreover, they must have a default (no-args) constructor so that they
+ * can be loaded by Service Providers, etc.
  *
  * @param    <I>  transformer input type
  * @param    <O>  transformer output type
@@ -21,19 +23,20 @@ public interface Transformer<I, O> {
     //~ Methods ----------------------------------------------------------------
 
     /**
-     * DOCUMENT ME!
+     * Tests beforehand if the input can be transformed by this transformer instance.
      *
-     * @param   obj  DOCUMENT ME!
+     * @param   obj  the input object
      *
-     * @return  DOCUMENT ME!
+     * @return  whether this instance can handle the input object
      */
     boolean accept(I obj);
     /**
-     * Implementing classes should be able to stop operations if interrupted.
+     * Does the actual transformation from object <code>I</code> to object <code>O</code>. Implementing classes should
+     * be able to stop operations if interrupted.
      *
-     * @param   obj  DOCUMENT ME!
+     * @param   obj  the input object
      *
-     * @return  DOCUMENT ME!
+     * @return  the output object
      */
     O transform(I obj);
 }
