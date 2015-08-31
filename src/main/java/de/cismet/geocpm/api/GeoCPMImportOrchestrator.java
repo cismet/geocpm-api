@@ -592,37 +592,34 @@ public class GeoCPMImportOrchestrator {
                     for (int i = runningProjects.size() - 1; i >= 0; --i) {
                         final Future f = runningProjects.get(i);
                         if (f.isDone()) {
-                            //J-
-                        // jalopy only supports java 1.6
-                        try {
-                            f.get(100, TimeUnit.MILLISECONDS);
-                            runningProjects.remove(i);
-                        } catch (final InterruptedException | TimeoutException ex) {
-                            if(log.isErrorEnabled()) {
-                                log.error("pipeline should have been completed", ex);       // NOI18N
+                            try {
+                                f.get(100, TimeUnit.MILLISECONDS);
+                                runningProjects.remove(i);
+                            } catch (final InterruptedException | TimeoutException ex) {
+                                if (log.isErrorEnabled()) {
+                                    log.error("pipeline should have been completed", ex); // NOI18N
+                                }
+
+                                doCancel("internal error: illegal pipeline state", null, null); // NOI18N
+
+                                return ProgressEvent.State.BROKEN;
+                            } catch (final CancellationException ex) {
+                                if (log.isErrorEnabled()) {
+                                    log.error("outside access to running pipelines", ex); // NOI18N
+                                }
+
+                                doCancel("internal error: illegal access to pipelines", null, null); // NOI18N
+
+                                return ProgressEvent.State.BROKEN;
+                            } catch (final ExecutionException ex) {
+                                if (log.isErrorEnabled()) {
+                                    log.error("error during pipeline processing", ex); // NOI18N
+                                }
+
+                                doCancel("error during pipeline processing", null, null); // NOI18N
+
+                                return ProgressEvent.State.BROKEN;
                             }
-
-                            doCancel("internal error: illegal pipeline state", null, null); // NOI18N
-
-                            return ProgressEvent.State.BROKEN;
-                        } catch (final CancellationException ex) {
-                            if(log.isErrorEnabled()) {
-                                log.error("outside access to running pipelines", ex);       // NOI18N
-                            }
-
-                            doCancel("internal error: illegal access to pipelines", null, null); // NOI18N
-
-                            return ProgressEvent.State.BROKEN;
-                        } catch (final ExecutionException ex) {
-                            if(log.isErrorEnabled()) {
-                                log.error("error during pipeline processing", ex);               // NOI18N
-                            }
-
-                            doCancel("error during pipeline processing", null, null);            // NOI18N
-
-                            return ProgressEvent.State.BROKEN;
-                        }
-                            //J+
                         }
                     }
                 }
